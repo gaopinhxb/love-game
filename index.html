@@ -1,0 +1,4405 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>那些年：爱而不得</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f7f3ed;--card:#fefcf9;--text:#2d2a26;--muted:#9a8e82;--line:#e6ddd4;
+  --accent:#c4a882;--accent2:#b0a498;--shadow:0 2px 12px rgba(0,0,0,.05);--radius:12px;
+  --reading-width:640px
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang SC","Noto Sans SC",sans-serif;min-height:100vh;display:flex;justify-content:center;line-height:1.9;-webkit-font-smoothing:antialiased}
+#app{max-width:var(--reading-width);width:100%;position:relative;min-height:100vh;display:flex;flex-direction:column}
+
+/* START SCREEN */
+#startScreen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#f7f3ed 0%,#efe7db 100%);z-index:100}
+.logo{text-align:center;margin-bottom:20px}
+.logo-main{font-size:42px;font-weight:200;letter-spacing:16px;color:var(--text);position:relative;display:inline-block}
+.logo-main::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(196,168,130,.3) 50%,transparent 100%);pointer-events:none}
+.logo-sub{display:block;font-size:13px;letter-spacing:8px;color:var(--muted);font-weight:300;margin-top:8px}
+.logo-line{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);margin:20px auto}
+.logo-desc{font-size:12px;line-height:2.2;color:var(--muted);max-width:320px;margin:0 auto 32px;text-align:center}
+
+/* GENDER SELECT */
+#genderScreen{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;background:var(--bg);z-index:100}
+.gender-title{font-size:18px;letter-spacing:4px;margin-bottom:24px;color:var(--text);font-weight:400}
+.gender-grid{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+.gender-card{width:140px;padding:24px 16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);text-align:center;cursor:pointer;transition:all .3s}
+.gender-card:hover{background:#f5efe8;border-color:var(--accent);transform:translateY(-3px);box-shadow:var(--shadow)}
+.gender-icon{font-size:40px;display:block;margin-bottom:4px}
+.gender-label{font-size:15px;color:var(--text);letter-spacing:2px}
+.gender-desc{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* GAME */
+#gameScreen{display:none;height:100vh;flex-direction:column;width:100%}
+#topBar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);flex-shrink:0;background:var(--bg)}
+#topBar .status{font-size:10px;color:var(--muted);letter-spacing:1px}
+#topBar .status span{color:var(--accent)}
+#topBar .nav-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;transition:.2s;font-family:inherit}
+#topBar .nav-btn:hover{color:var(--text)}
+[data-mode="choice"] #backBtn{color:var(--accent)}
+
+#progressBar{height:2px;background:var(--line);flex-shrink:0}
+#progressFill{height:100%;background:var(--accent);width:0%;transition:width .6s ease}
+
+#reader{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;display:flex;flex-direction:column;justify-content:center}
+#reader::-webkit-scrollbar{width:3px}
+#reader::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+
+#sceneName{font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:4px;display:none}
+#speaker{font-size:13px;color:var(--accent);margin-bottom:2px;opacity:0;transition:opacity .3s;min-height:20px}
+#speaker.show{opacity:1}
+
+#storyText{font-size:16px;line-height:2.1;word-break:break-word;white-space:pre-wrap;transition:opacity .3s;min-height:60px}
+#storyText .it{color:var(--accent2);font-style:italic;display:block;margin:10px 0;padding:4px 14px;border-left:2px solid var(--line);font-size:15px}
+#storyText .sys{color:var(--accent2);font-style:italic;font-size:14px}
+#storyText .dl{color:#8a7a6a}
+
+#continueHint{font-size:11px;color:var(--muted);text-align:center;margin:12px 0;cursor:pointer;opacity:0;transition:.3s;user-select:none}
+#continueHint.show{opacity:1}
+
+#choices{display:none;flex-direction:column;gap:8px;margin:16px 0;opacity:0;transition:opacity .4s}
+#choices.show{opacity:1;display:flex}
+#choices button{width:100%;padding:14px 18px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);cursor:pointer;font-size:14px;text-align:left;transition:all .2s;line-height:1.6;font-family:inherit;outline:none;color:var(--text)}
+#choices button:hover{background:#f5efe8;border-color:var(--accent);transform:translateX(4px)}
+#choices button .ht{font-size:10px;color:var(--accent2);margin-right:6px}
+
+/* SCENE TRANSITION */
+#sceneOverlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:50;opacity:0;pointer-events:none;transition:opacity .5s}
+#sceneOverlay.show{opacity:1;pointer-events:auto}
+#sceneOverlay .sn{font-size:16px;letter-spacing:6px;color:var(--accent);margin-bottom:6px;font-weight:300}
+#sceneOverlay .sd{font-size:12px;color:var(--muted);max-width:340px;text-align:center;line-height:1.8}
+
+/* ENDING SCREEN */
+#endingScreen{display:none;position:fixed;inset:0;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:var(--bg);z-index:101;text-align:center}
+#endingScreen .et{font-size:12px;letter-spacing:4px;color:var(--accent);margin-bottom:8px;font-weight:400}
+#endingScreen .etitle{font-size:24px;font-weight:300;letter-spacing:6px;margin-bottom:20px;color:var(--text)}
+#endingScreen .edesc{font-size:14px;line-height:2.2;color:var(--text);max-width:500px;margin:0 auto 20px}
+#endingScreen .eclose{font-size:13px;color:var(--muted);font-style:italic;max-width:400px;margin:0 auto 24px;line-height:1.8}
+#endingScreen .btn-group{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* BUTTONS */
+.btn{padding:12px 44px;border:1px solid var(--accent);border-radius:28px;background:transparent;color:var(--text);font-size:14px;cursor:pointer;letter-spacing:4px;transition:.3s;font-family:inherit;outline:none}
+.btn:hover{background:var(--accent);color:#fff}
+.btn-sm{padding:8px 28px;font-size:12px;letter-spacing:2px;border-radius:20px}
+
+/* MENU */
+#menuOverlay{position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:80;display:none}
+#menuPanel{position:fixed;top:0;right:-320px;width:300px;height:100vh;background:var(--card);z-index:81;padding:24px;box-shadow:-4px 0 20px rgba(0,0,0,.06);transition:right .35s ease;overflow-y:auto}
+#menuPanel.open{right:0}
+#menuOverlay.show{display:block}
+#menuPanel .menu-title{font-size:12px;color:var(--muted);letter-spacing:3px;margin-bottom:20px}
+#menuPanel .menu-item{display:block;width:100%;padding:12px 0;border:none;background:none;color:var(--text);font-size:14px;text-align:left;cursor:pointer;border-bottom:1px solid var(--line);transition:.2s;font-family:inherit}
+#menuPanel .menu-item:hover{color:var(--accent);padding-left:8px}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
+.fade-in{animation:fadeIn .4s ease both}
+.fade-out{animation:fadeOut .3s ease both}
+
+@media(max-width:480px){
+  .logo-main{font-size:32px;letter-spacing:10px}
+  #storyText{font-size:15px}
+  #choices button{font-size:13px;padding:12px 14px}
+  #endingScreen .etitle{font-size:20px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- START SCREEN -->
+  <div id="startScreen">
+    <div class="logo">
+      <span class="logo-main">那些年<span class="logo-sub">爱而不得</span></span>
+    </div>
+    <div class="logo-line"></div>
+    <div class="logo-desc">一场关于青春、错过与重逢的交互叙事<br>你的每一个选择，都在书写属于自己的结局<br>99种结局，等你抵达</div>
+    <button class="btn" id="startBtn">开始故事</button>
+  </div>
+
+  <!-- GENDER SELECT -->
+  <div id="genderScreen">
+    <div class="gender-title">— 请选择你的视角 —</div>
+    <div class="gender-grid">
+      <div class="gender-card" onclick="setGender('male')">
+        <span class="gender-icon">♂</span>
+        <div class="gender-label">男生</div>
+        <div class="gender-desc">以男生的视角体验故事</div>
+      </div>
+      <div class="gender-card" onclick="setGender('female')">
+        <span class="gender-icon">♀</span>
+        <div class="gender-label">女生</div>
+        <div class="gender-desc">以女生的视角体验故事</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gameScreen">
+    <div id="topBar">
+      <button class="nav-btn" id="backBtn" onclick="goBack()" style="visibility:hidden">←</button>
+      <div class="status"><span id="valDisplay">35</span> <span id="valName">心动值</span></div>
+      <button class="nav-btn" onclick="toggleMenu()">☰</button>
+    </div>
+    <div id="progressBar"><div id="progressFill"></div></div>
+    <div id="reader">
+      <div id="sceneName"></div>
+      <div id="speaker"></div>
+      <div id="storyText"></div>
+      <div id="continueHint" onclick="advance()">▼ 继续</div>
+      <div id="choices"></div>
+    </div>
+  </div>
+
+  <!-- SCENE TRANSITION -->
+  <div id="sceneOverlay">
+    <div class="sn" id="sceneTitle"></div>
+    <div class="sd" id="sceneDesc"></div>
+  </div>
+
+  <!-- ENDING SCREEN -->
+  <div id="endingScreen">
+    <div class="et" id="endingType"></div>
+    <div class="etitle" id="endingTitle"></div>
+    <div class="edesc" id="endingDesc"></div>
+    <div class="eclose" id="endingClosing"></div>
+    <div class="btn-group">
+      <button class="btn btn-sm" onclick="showEndingAgain()">再看一次</button>
+      <button class="btn btn-sm" onclick="returnHome()">回到开头</button>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div id="menuOverlay" onclick="toggleMenu()"></div>
+  <div id="menuPanel">
+    <div class="menu-title">— 菜单 —</div>
+    <button class="menu-item" onclick="returnHome()">回到开头</button>
+    <button class="menu-item" id="continueStoryBtn" onclick="toggleMenu()" style="display:none">继续故事</button>
+    <button class="menu-item" id="checkpointBtn" onclick="goBackChoice();toggleMenu()">回到上一步</button>
+  </div>
+</div>
+
+<script>
+const STORY = {
+  "meta": {
+    "title": "那些年：爱而不得",
+    "author": "时光叙事工坊",
+    "version": "2.0.0",
+    "description": "一场青春错过与重逢的交互叙事体验，收录99个结局与700+故事节点。",
+    "theme": "paper",
+    "ambient": "wind",
+    "cover": {
+      "label": "LOVE GAME / 01",
+      "tagline": "有些人教会你温柔，有些人教会你告别。而你——教会我成为自己。"
+    },
+    "variableName": "心动值",
+    "initialVariable": 35
+  },
+  "startNodeId": "gender_select",
+  "variables": {
+    "playerGender": "",
+    "chapter": 1,
+    "currentRoute": "male"
+  },
+  "achievements": {
+    "first_choice": {
+      "title": "第一个决定",
+      "description": "在故事开端做出了选择。"
+    },
+    "ending_01": {
+      "title": "结局 #1",
+      "description": "解锁了第1个结局。"
+    },
+    "ending_02": {
+      "title": "结局 #2",
+      "description": "解锁了第2个结局。"
+    },
+    "ending_03": {
+      "title": "结局 #3",
+      "description": "解锁了第3个结局。"
+    },
+    "ending_04": {
+      "title": "结局 #4",
+      "description": "解锁了第4个结局。"
+    },
+    "ending_05": {
+      "title": "结局 #5",
+      "description": "解锁了第5个结局。"
+    },
+    "ending_06": {
+      "title": "结局 #6",
+      "description": "解锁了第6个结局。"
+    },
+    "ending_07": {
+      "title": "结局 #7",
+      "description": "解锁了第7个结局。"
+    },
+    "ending_08": {
+      "title": "结局 #8",
+      "description": "解锁了第8个结局。"
+    },
+    "ending_09": {
+      "title": "结局 #9",
+      "description": "解锁了第9个结局。"
+    },
+    "ending_10": {
+      "title": "结局 #10",
+      "description": "解锁了第10个结局。"
+    },
+    "ending_11": {
+      "title": "结局 #11",
+      "description": "解锁了第11个结局。"
+    },
+    "ending_12": {
+      "title": "结局 #12",
+      "description": "解锁了第12个结局。"
+    },
+    "ending_13": {
+      "title": "结局 #13",
+      "description": "解锁了第13个结局。"
+    },
+    "ending_14": {
+      "title": "结局 #14",
+      "description": "解锁了第14个结局。"
+    },
+    "ending_15": {
+      "title": "结局 #15",
+      "description": "解锁了第15个结局。"
+    },
+    "ending_16": {
+      "title": "结局 #16",
+      "description": "解锁了第16个结局。"
+    },
+    "ending_17": {
+      "title": "结局 #17",
+      "description": "解锁了第17个结局。"
+    },
+    "ending_18": {
+      "title": "结局 #18",
+      "description": "解锁了第18个结局。"
+    },
+    "ending_19": {
+      "title": "结局 #19",
+      "description": "解锁了第19个结局。"
+    },
+    "ending_20": {
+      "title": "结局 #20",
+      "description": "解锁了第20个结局。"
+    },
+    "ending_21": {
+      "title": "结局 #21",
+      "description": "解锁了第21个结局。"
+    },
+    "ending_22": {
+      "title": "结局 #22",
+      "description": "解锁了第22个结局。"
+    },
+    "ending_23": {
+      "title": "结局 #23",
+      "description": "解锁了第23个结局。"
+    },
+    "ending_24": {
+      "title": "结局 #24",
+      "description": "解锁了第24个结局。"
+    },
+    "ending_25": {
+      "title": "结局 #25",
+      "description": "解锁了第25个结局。"
+    },
+    "ending_26": {
+      "title": "结局 #26",
+      "description": "解锁了第26个结局。"
+    },
+    "ending_27": {
+      "title": "结局 #27",
+      "description": "解锁了第27个结局。"
+    },
+    "ending_28": {
+      "title": "结局 #28",
+      "description": "解锁了第28个结局。"
+    },
+    "ending_29": {
+      "title": "结局 #29",
+      "description": "解锁了第29个结局。"
+    },
+    "ending_30": {
+      "title": "结局 #30",
+      "description": "解锁了第30个结局。"
+    },
+    "ending_31": {
+      "title": "结局 #31",
+      "description": "解锁了第31个结局。"
+    },
+    "ending_32": {
+      "title": "结局 #32",
+      "description": "解锁了第32个结局。"
+    },
+    "ending_33": {
+      "title": "结局 #33",
+      "description": "解锁了第33个结局。"
+    },
+    "ending_34": {
+      "title": "结局 #34",
+      "description": "解锁了第34个结局。"
+    },
+    "ending_35": {
+      "title": "结局 #35",
+      "description": "解锁了第35个结局。"
+    },
+    "ending_36": {
+      "title": "结局 #36",
+      "description": "解锁了第36个结局。"
+    },
+    "ending_37": {
+      "title": "结局 #37",
+      "description": "解锁了第37个结局。"
+    },
+    "ending_38": {
+      "title": "结局 #38",
+      "description": "解锁了第38个结局。"
+    },
+    "ending_39": {
+      "title": "结局 #39",
+      "description": "解锁了第39个结局。"
+    },
+    "ending_40": {
+      "title": "结局 #40",
+      "description": "解锁了第40个结局。"
+    },
+    "ending_41": {
+      "title": "结局 #41",
+      "description": "解锁了第41个结局。"
+    },
+    "ending_42": {
+      "title": "结局 #42",
+      "description": "解锁了第42个结局。"
+    },
+    "ending_43": {
+      "title": "结局 #43",
+      "description": "解锁了第43个结局。"
+    },
+    "ending_44": {
+      "title": "结局 #44",
+      "description": "解锁了第44个结局。"
+    },
+    "ending_45": {
+      "title": "结局 #45",
+      "description": "解锁了第45个结局。"
+    },
+    "ending_46": {
+      "title": "结局 #46",
+      "description": "解锁了第46个结局。"
+    },
+    "ending_47": {
+      "title": "结局 #47",
+      "description": "解锁了第47个结局。"
+    },
+    "ending_48": {
+      "title": "结局 #48",
+      "description": "解锁了第48个结局。"
+    },
+    "ending_49": {
+      "title": "结局 #49",
+      "description": "解锁了第49个结局。"
+    },
+    "ending_50": {
+      "title": "结局 #50",
+      "description": "解锁了第50个结局。"
+    },
+    "ending_51": {
+      "title": "结局 #51",
+      "description": "解锁了第51个结局。"
+    },
+    "ending_52": {
+      "title": "结局 #52",
+      "description": "解锁了第52个结局。"
+    },
+    "ending_53": {
+      "title": "结局 #53",
+      "description": "解锁了第53个结局。"
+    },
+    "ending_54": {
+      "title": "结局 #54",
+      "description": "解锁了第54个结局。"
+    },
+    "ending_55": {
+      "title": "结局 #55",
+      "description": "解锁了第55个结局。"
+    },
+    "ending_56": {
+      "title": "结局 #56",
+      "description": "解锁了第56个结局。"
+    },
+    "ending_57": {
+      "title": "结局 #57",
+      "description": "解锁了第57个结局。"
+    },
+    "ending_58": {
+      "title": "结局 #58",
+      "description": "解锁了第58个结局。"
+    },
+    "ending_59": {
+      "title": "结局 #59",
+      "description": "解锁了第59个结局。"
+    },
+    "ending_60": {
+      "title": "结局 #60",
+      "description": "解锁了第60个结局。"
+    },
+    "ending_61": {
+      "title": "结局 #61",
+      "description": "解锁了第61个结局。"
+    },
+    "ending_62": {
+      "title": "结局 #62",
+      "description": "解锁了第62个结局。"
+    },
+    "ending_63": {
+      "title": "结局 #63",
+      "description": "解锁了第63个结局。"
+    },
+    "ending_64": {
+      "title": "结局 #64",
+      "description": "解锁了第64个结局。"
+    },
+    "ending_65": {
+      "title": "结局 #65",
+      "description": "解锁了第65个结局。"
+    },
+    "ending_66": {
+      "title": "结局 #66",
+      "description": "解锁了第66个结局。"
+    },
+    "ending_67": {
+      "title": "结局 #67",
+      "description": "解锁了第67个结局。"
+    },
+    "ending_68": {
+      "title": "结局 #68",
+      "description": "解锁了第68个结局。"
+    },
+    "ending_69": {
+      "title": "结局 #69",
+      "description": "解锁了第69个结局。"
+    },
+    "ending_70": {
+      "title": "结局 #70",
+      "description": "解锁了第70个结局。"
+    },
+    "ending_71": {
+      "title": "结局 #71",
+      "description": "解锁了第71个结局。"
+    },
+    "ending_72": {
+      "title": "结局 #72",
+      "description": "解锁了第72个结局。"
+    },
+    "ending_73": {
+      "title": "结局 #73",
+      "description": "解锁了第73个结局。"
+    },
+    "ending_74": {
+      "title": "结局 #74",
+      "description": "解锁了第74个结局。"
+    },
+    "ending_75": {
+      "title": "结局 #75",
+      "description": "解锁了第75个结局。"
+    },
+    "ending_76": {
+      "title": "结局 #76",
+      "description": "解锁了第76个结局。"
+    },
+    "ending_77": {
+      "title": "结局 #77",
+      "description": "解锁了第77个结局。"
+    },
+    "ending_78": {
+      "title": "结局 #78",
+      "description": "解锁了第78个结局。"
+    },
+    "ending_79": {
+      "title": "结局 #79",
+      "description": "解锁了第79个结局。"
+    },
+    "ending_80": {
+      "title": "结局 #80",
+      "description": "解锁了第80个结局。"
+    },
+    "ending_81": {
+      "title": "结局 #81",
+      "description": "解锁了第81个结局。"
+    },
+    "ending_82": {
+      "title": "结局 #82",
+      "description": "解锁了第82个结局。"
+    },
+    "ending_83": {
+      "title": "结局 #83",
+      "description": "解锁了第83个结局。"
+    },
+    "ending_84": {
+      "title": "结局 #84",
+      "description": "解锁了第84个结局。"
+    },
+    "ending_85": {
+      "title": "结局 #85",
+      "description": "解锁了第85个结局。"
+    },
+    "ending_86": {
+      "title": "结局 #86",
+      "description": "解锁了第86个结局。"
+    },
+    "ending_87": {
+      "title": "结局 #87",
+      "description": "解锁了第87个结局。"
+    },
+    "ending_88": {
+      "title": "结局 #88",
+      "description": "解锁了第88个结局。"
+    },
+    "ending_89": {
+      "title": "结局 #89",
+      "description": "解锁了第89个结局。"
+    },
+    "ending_90": {
+      "title": "结局 #90",
+      "description": "解锁了第90个结局。"
+    },
+    "ending_91": {
+      "title": "结局 #91",
+      "description": "解锁了第91个结局。"
+    },
+    "ending_92": {
+      "title": "结局 #92",
+      "description": "解锁了第92个结局。"
+    },
+    "ending_93": {
+      "title": "结局 #93",
+      "description": "解锁了第93个结局。"
+    },
+    "ending_94": {
+      "title": "结局 #94",
+      "description": "解锁了第94个结局。"
+    },
+    "ending_95": {
+      "title": "结局 #95",
+      "description": "解锁了第95个结局。"
+    },
+    "ending_96": {
+      "title": "结局 #96",
+      "description": "解锁了第96个结局。"
+    },
+    "ending_97": {
+      "title": "结局 #97",
+      "description": "解锁了第97个结局。"
+    },
+    "ending_98": {
+      "title": "结局 #98",
+      "description": "解锁了第98个结局。"
+    },
+    "ending_99": {
+      "title": "结局 #99",
+      "description": "解锁了第99个结局。"
+    },
+    "love_true": {
+      "title": "真爱至上",
+      "description": "抵达一个真结局。"
+    },
+    "love_lost": {
+      "title": "遗憾是真",
+      "description": "抵达一个BE结局。"
+    },
+    "death_collector": {
+      "title": "直面终结",
+      "description": "抵达一个死亡结局。"
+    }
+  },
+  "nodes": {
+    "gender_select": {
+      "chapterTitle": "楔子·那些年",
+      "scene": {
+        "id": "时光的起点",
+        "name": "时光的起点",
+        "description": "秋日校园，一切从一片飘落的梧桐叶开始。",
+        "type": "major"
+      },
+      "progress": 1,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "九月。初秋的风裹着桂花香漫过整条林荫道。梧桐叶开始泛黄，偶尔有一两片打着旋儿落下来，落在你的肩膀上或者地面上。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你站在新校门前。行李箱滚轮在水泥地上发出沉闷的声响。你抬头看了一眼校门上的名字——那几个金色大字在阳光下闪闪发亮。",
+          "speaker": "系统"
+        },
+        {
+          "text": "阳光从梧桐叶的缝隙里漏下来，在你崭新的白衬衫上投下晃动的光斑。空气里有刚修剪过的青草味——割草机嗡嗡响了一整个上午。远处食堂飘来的饭菜香混着桂花味，让你忽然觉得有点饿了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你深吸一口气。教学楼的铃声刚好响了——急促的、催促的铃声。人群开始流动——有人在笑，有人在跑，有人在树荫下和一个女生说着什么。你站在人流中央，拎着你的行李箱，忽然意识到：从这一刻起，一切都是新的了。新的城市、新的学校、新的人——还有那些你还没遇见的，将改变你一生的故事。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "我是男生",
+          "next": "gender_male_intro",
+          "changes": {
+            "set": {
+              "playerGender": "male",
+              "currentRoute": "male"
+            }
+          }
+        },
+        {
+          "text": "我是女生",
+          "next": "gender_female_intro",
+          "changes": {
+            "set": {
+              "playerGender": "female",
+              "currentRoute": "female"
+            }
+          }
+        }
+      ]
+    },
+    "gender_male_intro": {
+      "scene": {
+        "id": "男生宿舍楼",
+        "name": "男生宿舍楼",
+        "description": "楼道里飘着泡面和洗衣粉的味道。",
+        "type": "major"
+      },
+      "progress": 3,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "你拎着行李走进了男生宿舍楼。楼道里光线有点暗，墙壁是那种被无数人蹭过的米白色，上面有球印、脚印和各种不明污渍。空气里混杂着泡面的味道、洗衣粉的味道、还有一点点汗味——很真实的那种男生宿舍的味道。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你的宿舍在302。推开门——",
+          "speaker": "系统"
+        },
+        {
+          "text": "房间里三个人同时抬起头。靠窗的那个最先开口——「新来的？睡那张空床。」他指了指靠门的下铺。床板上铺着一张凉席，看起来是上一任主人留下的。"
+        },
+        {
+          "text": "「谢谢。」你放下行李箱。靠窗那个点了点头又转回去打游戏了。上铺探下来一个脑袋——「兄弟哪儿人？」你报了你的城市名。他咧嘴一笑——「隔壁市的！以后回家可以一起走！」坐在书桌前看书的那个没回头，但举了举手算是打招呼。"
+        },
+        {
+          "text": "你环顾这个小小的空间——四张床、四张桌子、一个阳台、一个空调。这就是你接下来四年要住的地方了。你打开行李箱开始收拾东西——窗外传来操场上的叫喊声、篮球拍地的声音。你忽然觉得——这座陌生的城市，好像也没那么陌生了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "去参加新生见面会",
+          "next": "male_intro_meet"
+        },
+        {
+          "text": "先去校园里逛逛",
+          "next": "male_intro_walk"
+        }
+      ]
+    },
+    "male_intro_meet": {
+      "scene": {
+        "id": "体育馆",
+        "name": "体育馆",
+        "description": "新生见面会。空调开得很足。",
+        "type": "major"
+      },
+      "progress": 5,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "体育馆里坐满了人。空调开得太足了——你搓了搓手臂上的鸡皮疙瘩。台上的校长正在讲这所学校的百年历史，但你一个字都没听进去。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你的目光漫无目的地扫过人群——然后停住了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "第三排靠过道的位置。一个穿白色连衣裙的女生正在低头看书。在周围所有人都在玩手机的人群里，她像一个不属于这个时代的画面——安静地坐着，低头翻页，手指轻轻划过书页的边缘。她的长发垂下来遮住了半边脸，你能看到的只有她的侧脸——安静的、专注的、像一幅还没有上色的素描。"
+        },
+        {
+          "text": "她似乎感觉到了你的目光。她抬起头——",
+          "speaker": "系统"
+        },
+        {
+          "text": "你们的目光在空气中相遇了。不到一秒——但她微微愣了一下，然后礼貌地笑了一下，又重新低下头看书。那个笑容很淡——淡到你可能觉得自己看错了。但你的心跳不会骗你——它漏了一拍。"
+        },
+        {
+          "text": "你坐在座位上，手心有点出汗。体育馆的空调忽然没那么冷了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「那个女生是谁？我想认识她」",
+          "next": "male_meet_suwan",
+          "changes": {
+            "importantFlag": {
+              "flag": "interested_suwan",
+              "label": "对白衣女生一见钟情"
+            }
+          }
+        },
+        {
+          "text": "先和旁边的哥们儿聊天",
+          "next": "male_meet_friend",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "发信息给高中同学",
+          "next": "male_meet_oldfriend",
+          "changes": {
+            "val": -3
+          }
+        }
+      ]
+    },
+    "male_intro_walk": {
+      "scene": {
+        "id": "校园漫步",
+        "name": "校园漫步",
+        "description": "秋天的校园很美。梧桐叶铺了满地。",
+        "type": "major"
+      },
+      "progress": 5,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "你决定不急着回宿舍——一个人在校园里走走。",
+          "speaker": "系统"
+        },
+        {
+          "text": "梧桐树夹道而立——很老的树了，树干粗到一个人抱不住。金黄的叶子铺了一地，踩上去发出细碎的脆响。你走得很慢——穿过长长的林荫道、路过图书馆巨大的玻璃幕墙、经过操场——一群人在踢球，欢呼声和哨声混在一起飘过来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你走到一棵很大的银杏树下——金黄的叶子像一把撑开的巨伞，阳光透过叶隙落下来，在地上铺了一层碎金。树下有一张长椅。你正准备坐下来——然后你看到了椅背上刻着的几个字。"
+        },
+        {
+          "text": "字迹很浅，像是很久以前刻的。经过风雨的冲刷已经有些模糊了——但仍然可以辨认出来："
+        },
+        {
+          "text": "『我在这里等过你。』"
+        },
+        {
+          "text": "你看着那几个字，忽然觉得这个校园——好像藏着很多故事。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "去图书馆看看",
+          "next": "male_library",
+          "changes": {
+            "val": 3
+          }
+        },
+        {
+          "text": "去操场打球",
+          "next": "male_playground",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "回宿舍",
+          "next": "male_dorm_meet"
+        }
+      ]
+    },
+    "male_meet_friend": {
+      "scene": {
+        "id": "新朋友",
+        "name": "新朋友",
+        "description": "旁边坐着一个胖胖的男生。他先开了口。",
+        "type": "major"
+      },
+      "progress": 6,
+      "segments": [
+        {
+          "text": "「哥们儿，你也是新生？」他笑起来眼睛眯成一条缝。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「对啊，你也是？」你转过头。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「我叫大胖——！」他伸出手来，「以后就是哥们儿了！」你握住了他的手——很有力。后来大胖成了你在大学里最好的朋友之一——虽然你一直不确定他的真名到底是不是叫大胖。他带你去吃了学校附近最好吃的烧烤、带你去网吧通宵开黑、在你失恋的时候陪你喝了一整箱啤酒然后在阳台上对着月亮唱歌。",
+          "speaker": "系统"
+        },
+        {
+          "text": "但这是后来的事了。现在——散会了，大胖拉着你往外走：「走走走！我带你去认识几个学姐！我跟你说——美院的学姐最漂亮了！」",
+          "speaker": "系统"
+        },
+        {
+          "text": "你被大胖拽着往前走——走了一半你回头看了一眼体育馆。那个白色连衣裙的女生已经不见了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "跟着大胖去认识学姐",
+          "next": "male_intro_life",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "「我还是想去找那个白衣女生」",
+          "next": "male_meet_suwan"
+        }
+      ]
+    },
+    "male_meet_oldfriend": {
+      "scene": {
+        "id": "老同学",
+        "name": "老同学",
+        "description": "你给高中同学发了条消息。",
+        "type": "major"
+      },
+      "progress": 6,
+      "segments": [
+        {
+          "text": "「我到学校了！这边还不错！」你按下了发送键。",
+          "speaker": "系统"
+        },
+        {
+          "text": "对方秒回——「我也在！你在哪个校区？！」",
+          "speaker": "系统"
+        },
+        {
+          "text": "你的高中同学小雅也在这个大学。你看到消息的时候松了一口气——在这座完全陌生的城市里，有一个认识的人是一件让人安心的事。她约你周末一起吃饭叙旧。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你放下手机。然后你忽然想到——那个穿白色连衣裙的女生也是这个学校的。世界真小。"
+        },
+        {
+          "text": "你忽然对未来有了一点期待——这座陌生的城市，好像开始给你一些惊喜了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "先去找高中同学叙旧",
+          "next": "male_oldfriend_reunion",
+          "changes": {
+            "val": 3
+          }
+        },
+        {
+          "text": "「我还是想去找那个白衣女生」",
+          "next": "male_meet_suwan"
+        }
+      ]
+    },
+    "male_oldfriend_reunion": {
+      "scene": {
+        "id": "叙旧",
+        "name": "叙旧",
+        "description": "周末你在学校附近的奶茶店见到了小雅。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "「你变瘦了！」她一见面就笑着说。高中时候那种熟络感一下子就回来了——好像我们昨天才刚毕业。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你们聊了很多——高中时候的那些人和事、高考那几天的煎熬、填志愿的纠结、对大学生活的期待。她说她的室友们很好，已经在计划第一次寝室聚餐了。你说你的室友们也挺好——虽然目前只知道一个人叫大胖。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「那你呢——有没有喜欢的人？」她忽然问。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你愣了一下。脑海里浮现出那个穿白色连衣裙的身影——她在体育馆的灯光下低头翻书的样子。你犹豫了一下——"
+        },
+        {
+          "text": "「好像——好像有了。」"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「一个在图书馆遇见的女生」",
+          "next": "male_meet_suwan",
+          "changes": {
+            "val": 3
+          }
+        },
+        {
+          "text": "「没有——单身挺好的」",
+          "next": "male_intro_life"
+        }
+      ]
+    },
+    "male_dorm_meet": {
+      "scene": {
+        "id": "宿舍生活",
+        "name": "宿舍生活",
+        "description": "你回到宿舍的时候室友们正在打牌。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "「三缺一！快来！」老王朝你招手。你被拉进了牌局。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你的三个室友——打游戏的老王、看书的学霸、爱打电话的恋爱脑——后来成了你最铁的兄弟。那天晚上你们打牌打到熄灯——你输了五十块钱。老王赢了钱，大手一挥请大家吃夜宵。",
+          "speaker": "系统"
+        },
+        {
+          "text": "四个人蹲在阳台上吃烧烤喝啤酒。远处女生宿舍楼的灯光星星点点地亮着——像一片倒过来的星空。老王喝了一口啤酒忽然说：「欸——你们说——我们四个以后谁会先脱单？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "学霸先开口：「我觉得是你。」他指着老王。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「为什么？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「因为你最不要脸。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "大家笑成一片。你也在笑——但你心里在想着一个人。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "问他们美术系在哪栋楼",
+          "next": "male_meet_suwan",
+          "changes": {
+            "val": 3
+          }
+        },
+        {
+          "text": "享受当下的快乐——明天再说",
+          "next": "male_intro_life",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "male_library": {
+      "scene": {
+        "id": "图书馆",
+        "name": "图书馆",
+        "description": "你走进了图书馆。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "图书馆很大——三层楼，落地窗采光很好。里面很安静，只有空调的低鸣声和偶尔翻书的声音。你在书架之间穿行——手指划过一本本书的书脊，目光在一排排书名上跳来跳去。",
+          "speaker": "系统"
+        },
+        {
+          "text": "然后你在一个转身的瞬间——看到了她。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她坐在靠窗的位置。面前摊着一本很厚的书，右手握着一支笔——蓝色的——正在书页边缘写着什么。阳光从窗外照进来，在她的头发上镀了一层金色。她微微低着头，睫毛在脸上投下一小片阴影。"
+        },
+        {
+          "text": "你在书架后面站了很久。久到管理员过来问你——「同学，需要帮忙找书吗？」你吓了一跳，赶紧随便抽了一本书走向她附近的位置坐下来。你翻开书——但一个字也没看进去。因为她就在你的余光里——安静地、专注地、像一幅不属于这个世界的画。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "走过去跟她说话",
+          "next": "male_meet_suwan",
+          "changes": {
+            "val": 8
+          }
+        },
+        {
+          "text": "安静地坐在旁边",
+          "next": "male_library_silent",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "male_library_silent": {
+      "scene": {
+        "id": "安静的午后",
+        "name": "安静的午后",
+        "description": "你坐在离她不远的位子上。",
+        "type": "major"
+      },
+      "progress": 10,
+      "segments": [
+        {
+          "text": "你坐了一个小时。期间你偷偷看了她五次——她一直很专注。有一次她读到某个地方停下来，把书举起来对着光看，好像在研究书页上的什么东西。那个动作让你觉得——她真的很喜欢这本书。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她起身去书架还书的时候，经过了你身边。你闻到了一股很淡的香味——不是香水，更像是洗衣粉混合着阳光的味道。你的心跳了一下。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她回到座位的时候——对上了你的目光。她微微愣了一下，然后笑了。那个笑容很轻很淡——但她确实笑了。然后她重新低下头翻书。",
+          "speaker": "系统"
+        },
+        {
+          "text": "就那个笑容——让你觉得这一整个下午都值了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "明天一定跟她说话",
+          "next": "male_meet_suwan",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "male_playground": {
+      "scene": {
+        "id": "球场",
+        "name": "球场",
+        "description": "操场上有人在打篮球。你加入了他们。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "一场全场——跑下来出了一身汗。你进了几个三分球——手感不错。队友拍了拍你的肩膀——「哥们儿打得可以啊！哪个系的？」你说了你的专业。他点头——「以后常来！」",
+          "speaker": "系统"
+        },
+        {
+          "text": "打完球你坐在场边喝水。夕阳把整个操场染成了橘红色——天空是那种只有在初秋才能看到的颜色，从深蓝渐变到橘粉再到浅紫。远处图书馆的轮廓在夕阳下很清晰。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你看着那个方向——心想：明天就去图书馆。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "明天去图书馆找她",
+          "next": "male_meet_suwan",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "male_meet_suwan": {
+      "scene": {
+        "id": "追上去",
+        "name": "追上去",
+        "description": "散会后你做了一个自己都没想到的决定——你追了上去。",
+        "type": "major"
+      },
+      "progress": 8,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "「同学——同学！」你喊了两声——第一声太小了，第二声才够大。她转过身来，有些疑惑地看着你。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你突然发现自己根本不知道要说什么。你大脑一片空白。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「那个——你刚才看的什么书？」你问了一个你事后回想起来觉得可能是你这辈子最烂的搭讪问题。她低头看了一眼手里的书，然后把它翻过来给你看封面——《百年孤独》。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「马尔克斯。」她说。她的声音很轻，像怕打扰了谁。仔细听能听到一点点南方口音的尾调——软软的糯糯的。「你也喜欢？」她看着你。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「我——」你其实只看过开头——准确地说你连开头都没看完。但你看着她的眼睛，点了点头——「喜欢。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她笑了——那个笑容很淡，像秋天的第一缕风。但你知道——就是那个笑容，让你觉得说谎是值得的。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「我也在看，能聊聊吗？」",
+          "next": "sw_001",
+          "changes": {
+            "val": 10,
+            "importantFlag": {
+              "flag": "sw_route",
+              "label": "开始追求苏晚"
+            }
+          }
+        },
+        {
+          "text": "「我叫——你叫什么名字？」",
+          "next": "sw_002",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_001": {
+      "scene": {
+        "id": "图书馆共读",
+        "name": "图书馆共读",
+        "description": "午后的图书馆。阳光斜斜照进来。你们面对面坐着，中间放着一本《百年孤独》。",
+        "type": "major"
+      },
+      "progress": 12,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "「你真的看过？」她歪着头看着你——眼睛里带着一丝狡黠的笑意。那是一种「我知道你可能在说谎但我不拆穿你」的表情。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「呃——看过前面几章。」你老实交代了。你觉得自己在她面前好像不太会说谎——每次都会被看穿。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她噗嗤一声笑了出来——那个笑声在安静的图书馆里格外清脆。她赶紧捂住嘴——眼睛弯成了月牙。你看着她——觉得她整个人都在发光。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「那正好——」她压低声音小声说，「我刚好想找个人一起读。一个人读太孤独了。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "她翻开书，指了指第一页——「从这里开始。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "窗外秋天的阳光照在书页上。她低下头开始读——你看着她的侧脸，窗外有梧桐叶飘落。你忽然觉得——这个瞬间，大概就是所谓的美好。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "那我们从第一页开始",
+          "next": "sw_003",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "「其实我对马尔克斯不太了解，你给我讲讲？」",
+          "next": "sw_004",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "sw_002": {
+      "scene": {
+        "id": "自我介绍",
+        "name": "自我介绍",
+        "description": "「我叫苏晚。」那三个字你记住了很久。",
+        "type": "major"
+      },
+      "progress": 10,
+      "segments": [
+        {
+          "text": "「我叫苏晚。」她抱着书，微微歪着头看你——那个动作带着一点孩子气，和她安静的气质形成了一种很有趣的反差。「你呢？」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你说了你的名字。她点了点头，然后说了一句让你意外的话——「那以后在图书馆遇到的话——可以一起看书。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「真的吗？」你脱口而出——语气里的惊喜让你自己都有点不好意思。她抿着嘴笑了——那种「我知道你会是这个反应」的微笑。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「嗯。一个人读书太安静了。」她说完就转身走了——白色连衣裙的一角在走廊尽头一闪，然后不见了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你站在原地。走廊里有风穿堂而过——带着桂花的香味。你摸了摸自己的胸口——心跳得有点快。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "第二天就去图书馆等她",
+          "next": "sw_003",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "先了解她学什么专业的",
+          "next": "sw_002b",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "sw_002b": {
+      "scene": {
+        "id": "打听",
+        "name": "打听",
+        "description": "美术系，大一，苏晚。据说画画很好。",
+        "type": "major"
+      },
+      "progress": 10,
+      "segments": [
+        {
+          "text": "你辗转打听到了她的信息。美术系——苏晚——入学作品就被系主任当众表扬过。有人说她性格有点冷不太社交——但你想起她在图书馆对你笑的样子，觉得那些人的说法很可能是错的。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你第二天一大早就去了图书馆——比开门时间还早了十分钟。你在门口等着——图书馆管理员开门的时候看了你一眼：「这么早？」你笑了笑。你选了一个靠窗的位置坐下来——翻开一本书，但其实一个字也没看进去。你一直在想——她今天会来吗？"
+        },
+        {
+          "text": "她下午来了。她看到你的时候没有惊讶——只是微微笑了一下，然后走到你对面坐下来。她放下书包——从里面拿出了那本《百年孤独》。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「你来了。」",
+          "next": "sw_003",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_003": {
+      "scene": {
+        "id": "共读",
+        "name": "共读",
+        "description": "阳光在书页上缓缓移动。她低声朗读着开头——声音像泉水一样清澈。",
+        "type": "major"
+      },
+      "progress": 16,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "她清了清嗓子——用很轻很轻的声音读了起来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「多年以后，面对行刑队，奥雷里亚诺·布恩迪亚上校将会回想起父亲带他去见识冰块的那个遥远的下午。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "她的声音很轻——轻到你需要凑近一点才能听清。但她的语气里有种很稳的东西——不急不缓，像溪水流过石头。她读了几页之后停下来——抬起头看着你——「你觉得怎么样？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她的眼睛在午后的阳光下是浅棕色的——瞳孔里映着你的倒影。很小很小的两个你。你忽然注意到她的书页边角有用铅笔写的很小很小的英文单词——她大概在同时读原文。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「我觉得——」你看着她被阳光镀了一层金边的侧脸——窗外的风把她的头发吹起来几丝——你脱口而出：「你读得很好听。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她的脸红了。她低下头翻了一页——但你没有错过她嘴角那个藏不住的笑意。那个笑意很小很小——但它在那里。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「以后我们经常一起来图书馆吧」",
+          "next": "sw_005",
+          "changes": {
+            "val": 8,
+            "importantFlag": {
+              "flag": "sw_library_promise",
+              "label": "约定一起读书"
+            }
+          }
+        },
+        {
+          "text": "「你一般什么时候来图书馆？」",
+          "next": "sw_006",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "sw_004": {
+      "scene": {
+        "id": "马尔克斯",
+        "name": "马尔克斯",
+        "description": "她给你讲《百年孤独》的故事。她讲得很投入——你听得很认真。但说实话——你其实大半时间都在看她。",
+        "type": "major"
+      },
+      "progress": 14,
+      "segments": [
+        {
+          "text": "「你觉得马孔多是一个真实存在的地方吗？」她忽然问了一个很跳跃的问题。她的眼睛里有种认真的光——她不是在随便闲聊——她是真的想知道你的答案。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你想了想——「当然。在书里它就是真实的。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「那离开了书呢？」她追问。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你又想了想——「可能——它存在于每一个读过它的人心里吧。每个人心里都有一个马孔多——一个只有自己知道的地方。快乐的时候想去——难过的时候也想躲进去。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她安静了几秒。然后轻声说——「你说得对。」她低下头继续翻书——但你看到她翻页的时候嘴角是翘着的。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你心里有一个小小的声音在欢呼。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「以后有什么想聊的都可以找我」",
+          "next": "sw_005",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_005": {
+      "scene": {
+        "id": "约定",
+        "name": "约定",
+        "description": "你们开始每周末在图书馆见面了。她会在你到之前帮你占好靠窗的位置——因为她知道你喜欢阳光。",
+        "type": "major"
+      },
+      "progress": 20,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "你们开始了每周的图书馆之约。有时候她读《百年孤独》——你假装在看书但其实在看她。看她低头时垂下来的发丝、看到她读到有趣的地方时轻轻扬起的嘴角、看到她用铅笔在书页边缘写下很小很小的字。",
+          "speaker": "系统"
+        },
+        {
+          "text": "有一次她写了半天抬起头——正好撞上你的目光。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你在看什么？」她问。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「在看——」你顿了顿——「在看一个读书很认真的女生。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她把书举起来挡住了脸——但你没有错过她红透了的耳尖。过了好一会儿她才把书放下来——耳朵还是红的——「你这样我没办法专心看书了。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「那就不看——聊天？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她想了想——「那——你请我喝奶茶的话，我可以考虑。」",
+          "speaker": "苏晚"
+        }
+      ],
+      "choices": [
+        {
+          "text": "约她周末去画展",
+          "next": "sw_007",
+          "changes": {
+            "val": 10
+          }
+        },
+        {
+          "text": "给她带一杯奶茶",
+          "next": "sw_008",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "写一首诗夹在她书里",
+          "next": "sw_009",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "sw_006": {
+      "scene": {
+        "id": "图书馆的规律",
+        "name": "图书馆的规律",
+        "description": "「我一般下午都在。」从那天起你的下午课都不选了。",
+        "type": "major"
+      },
+      "progress": 18,
+      "segments": [
+        {
+          "text": "「周二周四下午我没课——一般泡在图书馆。周六上午也会来。」她想了想又补了一句。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你默默记了下来——周二、周四下午和周六上午。后来你的室友发现你周二周四明明没课但总是背着包出门——「你去哪儿？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「图书馆学习。」你面不改色地说。",
+          "speaker": "系统"
+        },
+        {
+          "text": "室友用怀疑的眼神看着你——从上大学你就没主动去过图书馆。你无视了他的目光跨上书包出了门——你确实去了图书馆。只是学不学习是另一回事。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "周末约她一起去书店",
+          "next": "sw_007",
+          "changes": {
+            "val": 8
+          }
+        }
+      ]
+    },
+    "sw_007": {
+      "scene": {
+        "id": "画展",
+        "name": "画展",
+        "description": "市美术馆正在办年轻艺术家联展。你不知道自己为什么要约她去看画展——你根本不懂画。但你想去——因为她在那里会比在任何地方都要自在。",
+        "type": "major"
+      },
+      "progress": 24,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "周末的美术馆人不算多。展厅很大——白色的墙壁上挂着各种风格的作品：油画、水彩、版画、综合材料。她走得比你要慢很多——每一幅画都驻足很久。你走两步就要停下来等她。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你不懂画。但你喜欢看她看画时候的样子——专注的、认真的、眼睛里有光的。她看画的时候好像忘记了身边的一切——包括你。但你不介意——因为你在看她。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她停在一幅画前面——站了很久。",
+          "speaker": "系统"
+        },
+        {
+          "text": "黄昏的海边——大片大片的橘红色天空下，一个人站在海水里。背影模糊不清——看不出是男是女，看不出是年轻还是苍老。底部有一行很小的字：『有些人注定是过客，但路过的时候——带走了你一整片海。』",
+          "speaker": "系统"
+        },
+        {
+          "text": "「这幅画叫什么？」你问。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「《潮汐》。」她说——声音很轻，「画的是——等你的人。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "她转过头看了你一眼——那个眼神里有种说不清楚的东西。浅浅的——像水面下藏着什么。你忽然觉得——那幅画里站在海水里的人——好像是某个时刻的她自己。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "握紧她的手",
+          "next": "sw_010",
+          "changes": {
+            "val": 15,
+            "importantFlag": {
+              "flag": "sw_handhold",
+              "label": "握住苏晚的手"
+            }
+          }
+        },
+        {
+          "text": "问她——「你在等谁？」",
+          "next": "sw_011",
+          "changes": {
+            "val": -5
+          }
+        }
+      ]
+    },
+    "sw_008": {
+      "scene": {
+        "id": "奶茶",
+        "name": "奶茶",
+        "description": "你注意到她每次看书的时候旁边都会放着一杯奶茶——芋泥波波。你走遍了学校附近的三家奶茶店才找到她喝的那个牌子。",
+        "type": "major"
+      },
+      "progress": 22,
+      "segments": [
+        {
+          "text": "有一天你去图书馆之前了绕了一趟远路——去那家她最常喝的奶茶店买了一杯芋泥波波。你进图书馆的时候她还没来——你把奶茶放在她习惯坐的位置前面——然后回到自己的位置假装看书。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她来了以后看到桌上的奶茶愣了一下。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「这是——？」她看向你。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「请你喝的。」你假装在看一本很难的书——眉头皱着。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她笑了——坐下来插上吸管喝了一口。然后她歪着头看你——「你怎么知道我喜欢喝这个？」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你沉默了一秒——「猜的。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "但其实——你是从她朋友圈翻到的。她发过一次——配文是「今日份的甜」。那个杯子上的logo你记住了。"
+        },
+        {
+          "text": "她看了你一眼——那一眼里有意思。一种很淡很淡的、你说不清是什么意思的意思。但你的心跳得很厉害。你低下头继续看那本你根本看不进去的书——但你翻页的时候笑了一下。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "约她周末看画展",
+          "next": "sw_007",
+          "changes": {
+            "val": 8
+          }
+        },
+        {
+          "text": "每天都给她带奶茶",
+          "next": "sw_008b",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_008b": {
+      "scene": {
+        "id": "日常",
+        "name": "日常",
+        "description": "你开始每天给她带奶茶。她一开始说不用了——你没听。后来她不说了。有一天你没带——她抬起头——「今天没有奶茶吗？」",
+        "type": "major"
+      },
+      "progress": 24,
+      "segments": [
+        {
+          "text": "你开始每天带一杯芋泥波波奶茶去图书馆。一开始她会不好意思——「你不用每天带啊。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「没事——我顺路。」你说。但其实不顺路——你每天都要特意骑自行车绕过去。",
+          "speaker": "系统"
+        },
+        {
+          "text": "后来她不再说了。有一天你没带——不是忘了，是因为那家店没开门。她来了以后看了一眼你的桌面——没有奶茶杯。她抬起头——「今天没有奶茶吗？」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你笑了——「明天补上。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她点了点头。但你没注意到——她那天自己跑去买了一杯。从那以后变成有时候她带给你。你们之间的默契就这样慢慢建立起来了——不用说的那种。你杯子里的水快没了——她看到会顺手帮你倒满。看到她对着画纸皱眉了——你知道她画不出满意的线条。你们的频率——在无声中慢慢同步。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "约她单独出去",
+          "next": "sw_009",
+          "changes": {
+            "val": 8
+          }
+        },
+        {
+          "text": "送她一套水彩",
+          "next": "sw_009b",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_009": {
+      "scene": {
+        "id": "天台",
+        "name": "天台",
+        "description": "你约她去了教学楼的天台。秋天的风很凉——她把你的外套穿上了，袖子太长，看起来像偷穿大人衣服的小孩。",
+        "type": "major"
+      },
+      "progress": 26,
+      "segments": [
+        {
+          "text": "天台的那扇铁门不太好开——你用肩膀撞了两下才把它推开。风一下子灌了进来——吹得她的头发飞起来。她裹了裹身上的外套——你的那件——缩了缩脖子——「好冷。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她走到栏杆边——俯瞰整个学校。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「这里能看到整个学校诶。」她说。学校在后来的夕阳下被染成暖色调——教学楼、操场、图书馆、湖——都变成了金色的。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「嗯——还有更远的地方。」你指了指远处的山轮廓。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她安静了一会儿。然后她说——声音被风吹散了一些——但你听得很清楚。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你知道吗——我以前不开心的时候就喜欢去楼顶。不是想跳下去——就是想看看远处。好像看远一点——烦恼就会变小。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「那以后——」你站在她身边，「不开心的时候，我陪你来天台。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她没有立刻回答。风把她的一缕头发吹到脸上——她没去理。过了好几秒——她才轻轻地点了一下头。",
+          "speaker": "系统"
+        }
+      ],
+      "choices": [
+        {
+          "text": "表白",
+          "next": "sw_010",
+          "changes": {
+            "val": 15,
+            "importantFlag": {
+              "flag": "sw_confession_try",
+              "label": "在天台表白"
+            }
+          }
+        },
+        {
+          "text": "握紧她的手",
+          "next": "sw_010",
+          "changes": {
+            "val": 10
+          }
+        }
+      ]
+    },
+    "sw_009b": {
+      "scene": {
+        "id": "礼物",
+        "name": "礼物",
+        "description": "你送了她一套水彩。她打开的时候眼睛亮亮的——「你怎么知道我正想要这个？」",
+        "type": "major"
+      },
+      "progress": 26,
+      "segments": [
+        {
+          "text": "你注意到她画画的时候水彩颜料快用完了——有几管已经挤不出颜色了，她还在使劲挤。那个牌子你完全没听说过——日本的一个小众品牌。你在网上搜了好几天——看了十几篇测评——才确定是她用的那一套。",
+          "speaker": "系统"
+        },
+        {
+          "text": "快递到的那天你拿着盒子去找她。你假装路过画室——「给你。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她打开盒子的时候愣住了。她抬头看你——眼睛里有光——「你怎么知道——」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「观察到的。」你装作很轻松地说。但其实——你没说你为了挑这个牌子在购物车里加了又删、删了又加了一个星期。没说你对比了三个电商平台的价格。没说你在小红书上看了一整晚的水彩测评。",
+          "speaker": "系统"
+        },
+        {
+          "text": "那天晚上她发了一条朋友圈——「收到了最喜欢的礼物。」配图是那套水彩的照片——拍得很用心——光打得很好。你刷到的时候差点从床上跳起来。室友问你发什么疯——「没事。」你躺回床上——盯着那条朋友圈看了很久。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "约她单独出来",
+          "next": "sw_009",
+          "changes": {
+            "val": 8
+          }
+        }
+      ]
+    },
+    "sw_010": {
+      "scene": {
+        "id": "画展外的街道",
+        "name": "画展外的街道",
+        "description": "你握住了她的手。她没有挣开。秋天的风从街道尽头吹过来——吹起了她的长发。",
+        "type": "major"
+      },
+      "progress": 28,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "你握住了她的手。那一瞬间——你做好了被甩开的准备。但她没有。她的手很凉——骨节分明，是一双画画的手、握笔握了很多年的手。她低下头——看着你们交握的手——沉默了几秒。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你知道学美术的人最怕什么吗？」她开口了——声音很轻——像秋天里的一片叶子落在地上。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「什么？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「最怕被一个人画进心里——就再也画不出别的了。」她抬起头——眼睛有些红——但她用力笑了一下、那个笑容里有眼泪的味道——「你早就被我画进心里了——白痴。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "秋天的阳光落在你们身上。街道很安静——偶尔有一两片梧桐叶飘下来。你握着她的手——觉得这一生一世大概都不会放开。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「做我女朋友吧」",
+          "next": "sw_he_route_01",
+          "changes": {
+            "val": 18,
+            "importantFlag": {
+              "flag": "sw_confession",
+              "label": "向苏晚告白"
+            }
+          }
+        },
+        {
+          "text": "把她轻轻拉进怀里",
+          "next": "sw_he_route_02",
+          "changes": {
+            "val": 12
+          }
+        }
+      ]
+    },
+    "sw_011": {
+      "scene": {
+        "id": "画展外的沉默",
+        "name": "画展外的沉默",
+        "description": "你问她在等谁。她的表情变了——像一层薄冰从她脸上掠过。",
+        "type": "major"
+      },
+      "progress": 22,
+      "ambient": "rain",
+      "segments": [
+        {
+          "text": "「你在等谁？」你问出这句话之后——她的表情变了。不是愤怒——不是难过——是一种很复杂的东西——像你触到了她某个不想被触碰的地方。",
+          "speaker": "系统"
+        },
+        {
+          "text": "然后她又笑起来——但那个笑容和之前的不一样了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「没什么。」她说——声音很轻——但轻得有点不一样了。她松开了你的手——「走吧。该回去了。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "回去的路上她一直很安静。你说了几个笑话她只是礼貌地笑了笑。你隐隐约约觉得自己好像问了不该问的问题——你踩到了一片薄冰——冰面裂开了——但没有完全碎。",
+          "speaker": "系统"
+        },
+        {
+          "text": "那天晚上你给她发消息——她过了很久才回。只有一个字——「嗯。」你翻来覆去睡不着——觉得有什么东西正在从你的指缝里——一点一点——溜走。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "追问她到底怎么了",
+          "next": "sw_be_route_01",
+          "changes": {
+            "val": -10
+          }
+        },
+        {
+          "text": "给她空间——等她自己说",
+          "next": "sw_be_route_02",
+          "changes": {
+            "val": -5
+          }
+        }
+      ]
+    },
+    "sw_he_route_01": {
+      "scene": {
+        "id": "街角告白",
+        "name": "街角告白",
+        "description": "你说出了那句话。风忽然停了——世界好像在那一秒按下了暂停键。",
+        "type": "major"
+      },
+      "progress": 32,
+      "segments": [
+        {
+          "text": "「做我女朋友吧。」你说完这句话之后觉得自己的声音在发抖——不是冷——是紧张。她怔怔地看着你——时间一秒一秒地过去——她的眼眶慢慢地红了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你认真的吗？」她的声音也在发抖。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「我从来没有这么认真过。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她低下头——眼泪掉了下来。落在你们交握的手上。她用力握着你的手——握得很紧——然后抬起头——泪眼模糊地笑了——「好。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "那一瞬间你觉得世界在旋转。后来你问她为什么哭了——她说因为太开心了——开心到觉得这不是真的。你说你也是。然后你们两个在马路边上站着——又哭又笑——像两个傻乎乎的没长大的孩子。",
+          "speaker": "系统"
+        },
+        {
+          "text": "远处有人在看你们——你没在意。你拉过她——把她抱在怀里。她在你胸口闷闷地说了一句话——「你要是敢骗我——我就把你画成最丑的样子。」你笑了——「好。你画吧。」"
+        }
+      ],
+      "choices": [
+        {
+          "text": "牵着她继续走下去",
+          "next": "sw_he_path_01",
+          "changes": {
+            "val": 10
+          }
+        },
+        {
+          "text": "拥抱她——更久一点",
+          "next": "sw_he_path_02",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_he_route_02": {
+      "scene": {
+        "id": "拥抱",
+        "name": "拥抱",
+        "description": "你把她拉进怀里。秋天的风从你们身边经过。",
+        "type": "major"
+      },
+      "progress": 30,
+      "segments": [
+        {
+          "text": "你把她拉进怀里。她的发顶就在你的下巴下面——很软——有淡淡的洗发水的香味。她靠在你胸口没有动——你感觉到她深呼吸了一下。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你心跳好快。」她闷闷地说。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「你的也是。」你感觉到她的心跳——透过衣服传过来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "她抬起头看着你——眼睛有点红——「我说——我也喜欢你。白痴。」然后她踮起脚尖——亲了你一下。很快——像夏天的风吹过湖面。你还没反应过来她已经退开了——脸红得像晚霞——低头看着自己的脚尖。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你伸手——用拇指轻轻擦过自己的嘴唇。那上面还残留着她的温度。不是错觉。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「做我女朋友吧」",
+          "next": "sw_he_route_01",
+          "changes": {
+            "val": 10
+          }
+        }
+      ]
+    },
+    "sw_he_path_01": {
+      "scene": {
+        "id": "秋天的街道",
+        "name": "秋天的街道",
+        "description": "你们牵着手走过了一条又一条街。谁都没有说话——但十指扣得很紧。",
+        "type": "major"
+      },
+      "progress": 36,
+      "segments": [
+        {
+          "text": "你们走了很久。梧桐叶在脚下沙沙作响——偶尔有一两片叶子旋转着落下来。你的手握着她的手——不紧不松——刚好够她随时可以抽走的程度。但她没有抽走。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你偷偷看了她一眼——她也在看你。你们两个人的目光撞在一起——都愣了一下——然后同时笑了出来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「喂。」她叫你。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「嗯？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「没什么——就想叫叫你。」她笑了——捏了捏你的手。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "太阳快落山了——天空被染成了橘粉色——和那幅《潮汐》一样的颜色。但这次——她不是站在海水里等你的那个人。她就在你身边——牵着你的手——和你一起看着同一片天空。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "送她回宿舍",
+          "next": "sw_he_mid_01",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "再待一会儿——去天台",
+          "next": "sw_he_mid_02",
+          "changes": {
+            "val": 8
+          }
+        }
+      ]
+    },
+    "sw_he_path_02": {
+      "scene": {
+        "id": "相拥",
+        "name": "相拥",
+        "description": "秋风很凉——但她的怀抱是暖的。",
+        "type": "major"
+      },
+      "progress": 34,
+      "segments": [
+        {
+          "text": "你抱着她——不想松手。好像一松手她就会像秋天的叶子一样飘走。她把脸埋在你的胸口——你的T恤前襟湿了一小块。不知道是眼泪还是什么。",
+          "speaker": "系统"
+        },
+        {
+          "text": "过了很久——久到她的室友路过的时候惊讶地咳嗽了一声——「苏晚？！」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她猛地从你怀里弹开——脸红得能煮鸡蛋。她室友用一种「我在看好戏」的表情笑着走了。她瞪了你一眼——但那个瞪里全是笑意——「都怪你。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「嗯——都怪我。」你笑着——觉得她是全世界最好看的人。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "牵着她继续走",
+          "next": "sw_he_path_01",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "sw_he_mid_01": {
+      "scene": {
+        "id": "女生宿舍楼下",
+        "name": "女生宿舍楼下",
+        "description": "路灯刚刚亮起来——暖黄色的光。",
+        "type": "major"
+      },
+      "progress": 40,
+      "segments": [
+        {
+          "text": "你们站在女生宿舍楼前。路灯的暖光照在她的脸上——她的睫毛在脸上投下细细的阴影。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「到了。」她松开你的手——但好像有点舍不得——手指在你掌心多停留了一秒才完全离开。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「明天——」你开口。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「明天图书馆见？」她抢答了——然后自己笑起来——「我都学会抢答了。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你笑了——「好。图书馆见。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她转身走了几步。然后在台阶上停下来——回头看了你一眼——「喂——」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「嗯？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「没什么。」她笑了一下——然后跑上楼了。",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "你在路灯下站了很久。那个回头——你觉得你可以记一辈子。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "目送她上楼",
+          "next": "sw_he_phase2_01",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "喊住她——「苏晚！」",
+          "next": "sw_he_phase2_02",
+          "changes": {
+            "val": 10
+          }
+        }
+      ]
+    },
+    "sw_he_mid_02": {
+      "scene": {
+        "id": "天台",
+        "name": "天台",
+        "description": "你们又偷偷溜上了天台。秋天的晚风很凉——但她的手在你手心里是暖的。",
+        "type": "major"
+      },
+      "progress": 42,
+      "segments": [
+        {
+          "text": "天台的铁门还是那么沉——你推了两下才打开。风灌进来——她打了个哆嗦。你赶紧把外套脱下来披在她身上——「我不冷。」——其实是有点冷的——但你不想承认。",
+          "speaker": "系统"
+        },
+        {
+          "text": "城市的灯光在远处蔓延——像一片倒转过来的星空。她靠着栏杆——看着远方——「以前我心情不好的时候——就喜欢一个人来天台。这里能看到整个城市——看到所有的灯光——就觉得好像也没那么孤单。」",
+          "speaker": "苏晚"
+        },
+        {
+          "text": "「那以后——」你站在她身边——肩膀碰着肩膀——「心情不好的时候——我陪你来。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "她没有说话。但她把头靠在了你的肩膀上——轻轻的——像一片叶子落在水面上。你伸出手——揽住了她的肩膀。她能感觉到你加速的心跳——但你不在乎了。这个时候——全世界都是你们的。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「以后都陪你来」",
+          "next": "sw_he_phase2_01",
+          "changes": {
+            "val": 10
+          }
+        }
+      ]
+    },
+    "gender_female_intro": {
+      "chapterTitle": "第一章·初遇",
+      "scene": {
+        "id": "女生宿舍楼",
+        "name": "女生宿舍楼",
+        "description": "楼道里飘着洗发水和花香。",
+        "type": "major"
+      },
+      "progress": 3,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "你选择了以女生的视角开始这段旅程。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你走进女生宿舍楼——楼道里飘着洗发水和沐浴露的香味。你的宿舍在405——推开门——",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你是最后一个到的！」一个短头发的女生跑过来帮你拿行李——「我叫暖暖！」她笑起来有两个小酒窝——眼睛弯弯的像月牙。",
+          "speaker": "系统"
+        },
+        {
+          "text": "上铺探出一个脑袋——「我叫小野！体育系的！」她倒挂着跟你打招呼——头发垂下来像瀑布。靠窗的女生摘下耳机回过头——「江晚——中文系。」她说话很温柔——像高中语文老师的那种语气。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你放下行李箱——看着这三个即将陪你度过四年的人——忽然觉得——这座陌生的城市——好像也没那么陌生了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "和室友们一起去食堂",
+          "next": "female_intro_canteen"
+        },
+        {
+          "text": "一个人去校园里走走",
+          "next": "female_intro_walk"
+        }
+      ]
+    },
+    "female_intro_canteen": {
+      "scene": {
+        "id": "食堂初遇",
+        "name": "食堂初遇",
+        "description": "食堂里人声鼎沸。你端着餐盘转身的时候——撞到了一个人。",
+        "type": "major"
+      },
+      "progress": 5,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "暖暖拉着你冲向麻辣香锅窗口——「这家最好吃！信我！」你端着满满的餐盘转身的时候——砰。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他的餐盘飞了出去——米饭、红烧肉、西红柿蛋汤在空中画出了一道完美的弧线——然后落在地上——发出沉闷的声响。你的白裙子也没能幸免——一块西红柿皮正贴在你的裙摆上——像一个荒谬的装饰。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「对不起对不起对不起！」对方手忙脚乱地掏出纸巾——你看清了他的脸——高高瘦瘦——戴着一副黑框眼镜——脸涨得通红通红。",
+          "speaker": "系统"
+        },
+        {
+          "text": "暖暖在旁边笑得直不起腰。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「没事——你也是新生吗？」",
+          "next": "female_meet_zhouyi",
+          "changes": {
+            "val": 8
+          }
+        },
+        {
+          "text": "笑着和他开玩笑",
+          "next": "female_tease_zhouyi",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "说没关系然后走开",
+          "next": "female_canteen_leave",
+          "changes": {
+            "val": -3
+          }
+        }
+      ]
+    },
+    "female_intro_walk": {
+      "scene": {
+        "id": "一个人的校园",
+        "name": "一个人的校园",
+        "description": "你一个人走在校园里。秋天的风很舒服。",
+        "type": "major"
+      },
+      "progress": 5,
+      "ambient": "wind",
+      "segments": [
+        {
+          "text": "你决定一个人走走——熟悉这个即将生活四年的地方。湖边的柳树还绿着——但已经有一些叶子开始泛黄了。几只鸭子在湖面上划出浅浅的水痕——一圈一圈散开——又归于平静。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你沿着湖边的小路走。经过一座小桥的时候——你看到有人在桥上看书。",
+          "speaker": "系统"
+        },
+        {
+          "text": "一个男生。白色衬衫——袖子挽到小臂——露出线条好看的手臂。他靠在小桥的栏杆上——手里拿着一本蓝色封面的书——看得很专注——完全没有注意到你的存在。风把他的头发吹乱了——他也没去理——只是偶尔用手把头发拨开——然后继续读。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "走过去看看他在看什么书",
+          "next": "female_bridge_meet",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "在旁边的长椅上坐下",
+          "next": "female_park_sit",
+          "changes": {
+            "val": 3
+          }
+        },
+        {
+          "text": "回去找室友们",
+          "next": "female_back_dorm"
+        }
+      ]
+    },
+    "female_meet_zhouyi": {
+      "scene": {
+        "id": "学霸的道歉",
+        "name": "学霸的道歉",
+        "description": "他说他叫周易——物理系的。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "「真的对不起！我叫周易——物理系一年级的——你的裙子我赔你一条新的！」他涨红着脸——语速飞快——像在背一个很长的公式。",
+          "speaker": "周易"
+        },
+        {
+          "text": "「算了——擦擦就好了。」你看了一眼裙子上的汤汁——估计是洗不掉了。但你看着他真诚又紧张的样子——又不好意思让他赔。",
+          "speaker": "系统"
+        },
+        {
+          "text": "暖暖在旁边火上浇油——「那条裙子可是她最喜欢的！」",
+          "speaker": "暖暖"
+        },
+        {
+          "text": "周易的脸更红了——他手忙脚乱地掏出手机——「那——那你加我微信——我转账给你！」",
+          "speaker": "周易"
+        },
+        {
+          "text": "你加了。这是你和周易认识的过程——一碗红烧肉换来的缘分。后来你再想起这件事——总觉得很好笑。但你也承认——如果不是那碗红烧肉——你可能永远不会认识这个物理系的男生。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "加微信——接受他的道歉",
+          "next": "zy_001",
+          "changes": {
+            "val": 5,
+            "importantFlag": {
+              "flag": "zy_route",
+              "label": "认识周易"
+            }
+          }
+        },
+        {
+          "text": "笑着说真的不用了",
+          "next": "zy_001_alt",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "female_tease_zhouyi": {
+      "scene": {
+        "id": "玩笑",
+        "name": "玩笑",
+        "description": "你笑着对他说——「你的道歉方式挺特别的——用一整份红烧肉。」",
+        "type": "major"
+      },
+      "progress": 7,
+      "segments": [
+        {
+          "text": "他挠了挠头——「这个——我真的不是故意的。对不起。你的裙子——」",
+          "speaker": "周易"
+        },
+        {
+          "text": "「没事——以后小心点就行。」你说的「以后」让他愣了一下——耳朵尖又开始泛红。",
+          "speaker": "系统"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「我叫——很高兴认识你」",
+          "next": "zy_001",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "拉着暖暖走了",
+          "next": "female_back_dorm"
+        }
+      ]
+    },
+    "female_canteen_leave": {
+      "scene": {
+        "id": "回宿舍",
+        "name": "回宿舍",
+        "description": "你说没关系然后拉着暖暖走了。",
+        "type": "major"
+      },
+      "progress": 6,
+      "segments": [
+        {
+          "text": "「你怎么不留联系方式啊！」暖暖一路上都在念叨，「那个男生挺帅的你没看到吗？虽然他洒了你一身汤——但是——帅就是帅啊！」",
+          "speaker": "暖暖"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「以后还会遇到的——不急」",
+          "next": "female_back_dorm"
+        },
+        {
+          "text": "「也是哦——那我加他微信？」",
+          "next": "female_meet_zhouyi",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "female_bridge_meet": {
+      "scene": {
+        "id": "桥上的男生",
+        "name": "桥上的男生",
+        "description": "你走近了才发现他看的是《挪威的森林》。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "「你好——请问现在几点了？」你找了一个不能再老套的搭讪方式。你后来回想起来都觉得脸红。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他抬起头——他的眼睛很好看。不是那种特别明亮的——是那种沉静的——深色的——像冬天的湖水。他愣了一下——然后看了看手表——「四点二十。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "他合上了书。确实是《挪威的森林》。",
+          "speaker": "系统"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「这本书好看吗？」",
+          "next": "zy_001",
+          "changes": {
+            "val": 5
+          }
+        },
+        {
+          "text": "「谢谢」——然后离开",
+          "next": "female_park_sit"
+        }
+      ]
+    },
+    "female_park_sit": {
+      "scene": {
+        "id": "湖边长椅",
+        "name": "湖边长椅",
+        "description": "你坐了下来——秋天的风很舒服。",
+        "type": "major"
+      },
+      "progress": 6,
+      "segments": [
+        {
+          "text": "长椅的位置很好——能看到整个湖面。远处有人在喂鸭子——小朋友的笑声断断续续地传过来。你坐在那里——什么都不想——就是放空。这些天的忙碌和陌生感——在这一刻全部消融了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "一只橘色的猫不知道从哪里钻出来——跳到长椅的另一端——蜷缩了起来——眯着眼睛看着你。你看着它——笑了。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "该回去了——室友还在等",
+          "next": "female_back_dorm"
+        }
+      ]
+    },
+    "female_back_dorm": {
+      "scene": {
+        "id": "宿舍的夜晚",
+        "name": "宿舍的夜晚",
+        "description": "你回到宿舍。室友们都在——暖暖在涂指甲油——小野在练仰卧起坐——江晚在看书。",
+        "type": "major"
+      },
+      "progress": 8,
+      "segments": [
+        {
+          "text": "「回来了？今天有什么艳遇没有？」暖暖头也不抬——但她涂指甲油的手停了——竖着耳朵在等你的答案。",
+          "speaker": "暖暖"
+        },
+        {
+          "text": "你笑了笑说没有——但你的脑海里闪过了那个在桥上看书的男生的侧脸。你没有说出来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "夜间的女生宿舍很热闹——有人在聊八卦——有人在打电话——有人在弹吉他。你躺在床上——听着室友们的声音——觉得这样的日子其实挺好的。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "明天去图书馆自习",
+          "next": "female_library_start",
+          "changes": {
+            "val": 3
+          }
+        },
+        {
+          "text": "和室友们聊通宵",
+          "next": "female_dorm_chat",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "female_library_start": {
+      "scene": {
+        "id": "图书馆第二天",
+        "name": "图书馆第二天",
+        "description": "你第二天去了图书馆——带了一本村上春树。",
+        "type": "major"
+      },
+      "progress": 10,
+      "segments": [
+        {
+          "text": "你选了一本村上春树——因为昨天那个男生看的那本让你也产生了兴趣。你找了一个靠窗的位置坐下——翻开书——但看了两页就走神了。你一直在想——他今天会不会也来图书馆？",
+          "speaker": "系统"
+        },
+        {
+          "text": "然后——他真的来了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他推门走进来——目光扫了一圈——然后停在了你的方向。他犹豫了一下——然后——向你走了过来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「这里有人吗？」他指了指你对面的位子。",
+          "speaker": "周易"
+        },
+        {
+          "text": "「没有。」你听到自己的心跳声——在安静的图书馆里——显得格外清楚。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「好巧——又是你」",
+          "next": "zy_001",
+          "changes": {
+            "val": 8
+          }
+        },
+        {
+          "text": "低头假装看书——但其实在笑",
+          "next": "zy_001_alt",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "female_dorm_chat": {
+      "scene": {
+        "id": "宿舍夜话",
+        "name": "宿舍夜话",
+        "description": "你们聊到了凌晨两点。",
+        "type": "major"
+      },
+      "progress": 10,
+      "segments": [
+        {
+          "text": "暖暖聊她高中时期的暗恋对象——「他打篮球超帅的——可惜后来转学了。」小野聊她运动队里的训练趣事——「你们知道吗我们教练有次跑操的时候踩到狗屎了——但他假装没事一瘸一拐坚持跑完了全程。」江晚聊她为什么选择中文系——「因为我想把我奶奶的故事写下来。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「那你呢——你有没有喜欢的人？」暖暖忽然转过身——在黑暗中——你看不清她的表情——但你知道她在坏笑。",
+          "speaker": "暖暖"
+        },
+        {
+          "text": "你说没有。但你翻了个身——面朝墙壁——脑海里又出现了那个在桥上看书的男生——他的头发被风吹乱了——他也没去理。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "明天去图书馆——也许能遇到他",
+          "next": "female_library_start",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "zy_001": {
+      "scene": {
+        "id": "物理系的笨拙",
+        "name": "物理系的笨拙",
+        "description": "周易真的给你转了裙子钱——你没收。",
+        "type": "major"
+      },
+      "progress": 10,
+      "segments": [
+        {
+          "text": "周易真的在微信上给你转了裙子钱——一个看起来很认真的金额。你没收。他又发了一次——你又退回了。他又发——你被逗笑了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "最后他说——「那至少我请你吃顿饭赔罪吧——不然我良心不安。」",
+          "speaker": "周易"
+        },
+        {
+          "text": "周末你们去了学校附近那家川菜馆。他穿了一件干净的白色T恤——应该是有意换的——头发也打理过了。他比在食堂那天自在了很多——至少说话不结巴了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「你知道薛定谔的猫吗？」他夹了一筷子水煮鱼——忽然问。",
+          "speaker": "周易"
+        },
+        {
+          "text": "「知道——一只又死又活的猫。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「对。但我觉得——那只猫其实不重要。」他认真地说——放下筷子看着你，「重要的是——你打开盒子之前的那一刻。那种不确定性——才是最有意思的部分。」",
+          "speaker": "周易"
+        },
+        {
+          "text": "你看着他认真讲解的样子——眼睛里有光——睫毛在灯光下投下细细的阴影。你忽然觉得——这个书呆子——其实挺可爱的。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「那你觉得我们现在是不确定的吗？」",
+          "next": "zy_002",
+          "changes": {
+            "val": 8
+          }
+        },
+        {
+          "text": "「你说话的样子很像在讲课」",
+          "next": "zy_003",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "zy_001_alt": {
+      "scene": {
+        "id": "继续看书",
+        "name": "继续看书",
+        "description": "你低头假装看书——但嘴角忍不住向上翘。",
+        "type": "major"
+      },
+      "progress": 9,
+      "segments": [
+        {
+          "text": "他也翻开书——但你们谁都没有真的在看。图书馆里安静极了——能听到遥远的翻书声——空调的低鸣声——还有你们的——各自剧烈的——心跳声。",
+          "speaker": "系统"
+        },
+        {
+          "text": "过了大概一个世纪那么久——他开口了——「我叫周易。」他推了推眼镜——「你呢？」",
+          "speaker": "周易"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「我叫——很高兴正式认识你」",
+          "next": "zy_001",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "zy_002": {
+      "scene": {
+        "id": "不确定的答案",
+        "name": "不确定的答案",
+        "description": "他愣了一下——然后耳朵以肉眼可见的速度红了。",
+        "type": "major"
+      },
+      "progress": 12,
+      "segments": [
+        {
+          "text": "他愣了一下——然后耳朵尖以肉眼可见的速度变成了粉红色。他低下头——扒了一大口饭——含含糊糊地说——「这个——这个需要实验数据。」",
+          "speaker": "周易"
+        },
+        {
+          "text": "「什么实验数据？」你忍着笑——看着他。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他放下碗——认真地想了想——「就是——要多接触——才能确定。实验周期大概需要——比较长的时间。」",
+          "speaker": "周易"
+        },
+        {
+          "text": "你笑出了声——「多长？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「大概——」他思考了一下——「大概——一辈子。」他说完之后自己也愣住了。然后他的整张脸都红了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "你看着他——他也看着你——然后你们两个都笑了。物理系男生的表白——用量子力学包装——很笨拙——但很真诚。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「那——我配合你的实验」",
+          "next": "zy_004",
+          "changes": {
+            "val": 10,
+            "importantFlag": {
+              "flag": "zy_flirt",
+              "label": "对周易示好"
+            }
+          }
+        },
+        {
+          "text": "转移话题——聊点别的",
+          "next": "zy_005",
+          "changes": {
+            "val": 3
+          }
+        }
+      ]
+    },
+    "zy_003": {
+      "scene": {
+        "id": "讲课模式",
+        "name": "讲课模式",
+        "description": "「你说话的样子很像在讲课。」",
+        "type": "major"
+      },
+      "progress": 11,
+      "segments": [
+        {
+          "text": "「啊——对不起。我室友也这么说。」他不好意思地挠了挠头——那个动作有点孩子气。",
+          "speaker": "周易"
+        },
+        {
+          "text": "「不用道歉——」你脱口而出，「挺可爱的。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "说完之后你才意识到自己说了什么。你闭上了嘴。他也闭上了嘴。空气凝固了两秒。然后他低下头开始疯狂吃饭——你看到了他的耳朵——从耳尖到耳根——全部变成了粉红色。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「那再给我讲讲薛定谔的猫？」",
+          "next": "zy_002",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "zy_004": {
+      "scene": {
+        "id": "实验室的约会",
+        "name": "实验室的约会",
+        "description": "周易的实验周期开始了。他约你参观他的实验室。",
+        "type": "major"
+      },
+      "progress": 16,
+      "segments": [
+        {
+          "text": "物理实验室里有各种你叫不出名字的仪器——示波器、激光器、真空泵、光谱仪。他一台一台给你介绍——很认真——很耐心——像在给一个小朋友讲解科学原理。你其实大部分没听懂——但你喜欢他讲解时专注的侧脸——睫毛微微垂下来——手上一边做示范一边说话的样子。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他调好一台显微镜让你看——你凑过去——里面是晶体结构——像一幅抽象画——规则的几何图形层层叠叠——反射出不同颜色的光芒。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「好看吗？」他问。",
+          "speaker": "周易"
+        },
+        {
+          "text": "「好看——虽然看不懂。」你诚实地说。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他笑了笑——「没关系——以后我慢慢给你讲。」那句话他说得很自然——好像在说一件理所当然的事情。你的心里动了一下。",
+          "speaker": "系统"
+        },
+        {
+          "text": "那天他送你回宿舍。走到楼下的时候——他忽然停下了脚步。你转头看他——他深吸了一口气——然后——鼓起勇气牵了你的手。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他的手指穿过你的指缝——握住了你的手。他的手很暖——物理系男生的手比想象中要暖。他也没说话——就这样牵着你走完了最后几步路——到宿舍门口——他松开手——「明天——还能见面吗？」声音有点哑。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "「嗯——明天见」——和周易走下去",
+          "next": "zy_he_continue",
+          "changes": {
+            "val": 10
+          }
+        },
+        {
+          "text": "「我觉得——还是做朋友比较好」",
+          "next": "zy_be_start",
+          "changes": {
+            "val": -5
+          }
+        }
+      ]
+    },
+    "zy_005": {
+      "scene": {
+        "id": "转移话题",
+        "name": "转移话题",
+        "description": "你问了他一些物理的有趣问题。",
+        "type": "major"
+      },
+      "progress": 12,
+      "segments": [
+        {
+          "text": "你问了几个关于黑洞和相对论的问题——他回答得很认真——还用纸巾画了示意图给你看。但你能感觉到——他有点失落——因为你知道你把话题岔开了。",
+          "speaker": "系统"
+        },
+        {
+          "text": "分别的时候——他在你宿舍楼下站了一下——好像想说什么——最后只是问——「那——下次还能约你吃饭吗？」",
+          "speaker": "周易"
+        },
+        {
+          "text": "「可以啊。」你点了点头。他露出一个如释重负的笑容——那个笑容太明显了——明显到你觉得有点心软。"
+        }
+      ],
+      "choices": [
+        {
+          "text": "下次再约——慢慢了解",
+          "next": "zy_004",
+          "changes": {
+            "val": 5
+          }
+        }
+      ]
+    },
+    "zy_he_continue": {
+      "scene": {
+        "id": "物理系恋爱",
+        "name": "物理系恋爱",
+        "description": "你们开始约会了。周易谈恋爱的方式——也很物理系。",
+        "type": "major"
+      },
+      "progress": 20,
+      "segments": [
+        {
+          "text": "周易谈恋爱的方式很独特。他会用公式计算出你们见面的最佳时间——「根据你的课表和你的作息规律——周二下午四点以后你的精神状态最好——适合约会。」他一本正经地告诉你。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他会给你发他写的量子力学情诗——虽然你一句也看不懂——但你知道他在用他的方式说喜欢你。有一次他在图书馆的桌面上贴了一张便签——上面写着一个复杂的方程——解的答案是「我喜欢你」。你用了一下午都没解出来——他无奈地笑着帮你解完——然后你看到答案的时候差点在图书馆里叫出来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "有一次你问他——「你为什么喜欢我？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "他想了好久——「因为——看到你的时候——我的心跳会变成非周期性的……不受控制。」",
+          "speaker": "周易"
+        },
+        {
+          "text": "「什么意思？」",
+          "speaker": "系统"
+        },
+        {
+          "text": "「意思是——」他难得没有用物理学术语——他看着我——眼睛里有光——「每次看到你——都像第一次看到你一样。」"
+        }
+      ],
+      "choices": [
+        {
+          "text": "他真的很可爱——继续HE之路",
+          "next": "zy_he_next",
+          "changes": {
+            "val": 8
+          }
+        }
+      ]
+    },
+    "zy_he_next": {
+      "scene": {
+        "id": "幸福继续",
+        "name": "幸福继续",
+        "description": "日子就这么一天天过去了。",
+        "type": "major"
+      },
+      "progress": 24,
+      "segments": [
+        {
+          "text": "周易学会了很多跟物理无关的事——比如记住你喜欢吃什么——比如在你心情不好的时候什么都不说只是陪着你——比如在你生日的时候笨手笨脚地给你做了一顿饭——虽然厨房差点烧起来。",
+          "speaker": "系统"
+        },
+        {
+          "text": "他的室友说你彻底改变了他——「以前他除了物理什么都不关心。现在——他手机里全是你——你的照片、你喜欢的东西、你提到过的每一件事——他都记在一个本子上。」",
+          "speaker": "系统"
+        },
+        {
+          "text": "毕业后他向你求婚——用的是一枚他自己用实验室材料打磨的戒指。不是很完美——表面有细微的划痕——但你戴上去的时候觉得——这是全世界最完美的戒指。",
+          "speaker": "系统"
+        },
+        {
+          "text": "「经过长期实验观察——」他单膝跪地——声音在发抖——「我确定——你就是我想要的那个人。」",
+          "speaker": "周易"
+        }
+      ],
+      "choices": [
+        {
+          "text": "她说愿意——HE结局",
+          "next": "ending_zy_he",
+          "changes": {
+            "val": 15
+          }
+        }
+      ]
+    },
+    "zy_be_start": {
+      "scene": {
+        "id": "退后",
+        "name": "退后",
+        "description": "你说——还是做朋友比较好。",
+        "type": "major"
+      },
+      "progress": 16,
+      "segments": [
+        {
+          "text": "他沉默了很久。久到你觉得他可能没有听到。然后他点了点头——「好。做朋友。」他甚至在说这句话的时候——都努力让自己的声音保持平稳。",
+          "speaker": "周易"
+        },
+        {
+          "text": "但他看你的那个眼神——你知道他在说谎。",
+          "speaker": "系统"
+        },
+        {
+          "text": "后来他确实没有再提过——但每次在校园里遇到的时候——他都会停下来跟你聊几句。你看着他努力维持\"朋友\"这个身份的样子——心里有点酸——但你知道这是对的——你们真的不太合适。",
+          "speaker": "系统"
+        },
+        {
+          "text": "学期末的时候——你听说他拿了物理竞赛的大奖——要去德国的一个研究所交流。你发消息祝贺他——他回了一句——",
+          "speaker": "系统"
+        },
+        {
+          "text": "「谢谢。你也要好好的。」",
+          "speaker": "周易"
+        }
+      ],
+      "choices": [
+        {
+          "text": "BE 结局",
+          "next": "ending_zy_be",
+          "changes": {
+            "val": -10
+          }
+        }
+      ]
+    },
+    "ending_zy_he": {
+      "isEnding": true,
+      "title": "薛定谔的幸福",
+      "type": "TRUE ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "周易毕业那天向你求婚——用的是一枚自己用实验室材料打磨的戒指。他说——「经过长期实验观察——我确定你就是我想要的那个人。」你说了愿意。",
+      "closing": "你是我人生中最确定的不确定。",
+      "effect": "breath",
+      "achievement": "love_true"
+    },
+    "ending_zy_be": {
+      "isEnding": true,
+      "title": "实验失败",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "周易去了德国的研究所。临走前他在机场说——「物理定律说两列波相遇后会继续各自传播——但我不甘心。」他转身走进了安检口。你看着他的背影消失在人群里。",
+      "closing": "有些相遇不是为了停留——只是为了交错。",
+      "effect": "breath",
+      "achievement": "love_lost"
+    },
+    "ending_sw_he": {
+      "isEnding": true,
+      "title": "执子之手",
+      "type": "TRUE ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "她毕业之后开了自己的画室——名取《故事的开始》。你每周都去帮她洗笔、整理画架、给来访的客人倒茶。墙上挂着你最喜欢的那幅画——一个男生在秋天的图书馆里认真看书——阳光在他身上镀了一层金边。你每次看到都会笑。",
+      "closing": "苏晚说：谢谢你，在最好的年纪遇见我。我们两个要幸福生活下去了。也感谢屏幕外的你给我们的爱情故事增添了色彩。希望你也被好好地爱着。",
+      "effect": "breath",
+      "achievement": "love_true"
+    },
+    "ending_sw_be": {
+      "isEnding": true,
+      "title": "未寄出的信",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "毕业那年你收拾东西的时候翻出了那本《百年孤独》。你打开它——里面掉出一封信。是她的字迹。你看着那个信封很久很久——最后把它夹回了书里。有些信——不拆开才是最好的结局。那本书现在还放在你的书架上——你搬了几次家——都没有扔。",
+      "closing": "你是我青春里最亮的光。愿你永远发光——即使不再为我而亮。",
+      "effect": "breath",
+      "achievement": "love_lost"
+    },
+    "ending_lx_he": {
+      "isEnding": true,
+      "title": "画布上的答案",
+      "type": "TRUE ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你的画终于被人看到了。那个曾经在桥上看书的男生——在画展上买下了你画的那幅背影。他发来消息——「我能请画里的人喝杯咖啡吗？」你们约在当年遇见的那座小桥旁边。他还和那天一样好看——风把他的头发吹乱了——他还是一样没去理。",
+      "closing": "原来等待的人真的会来。",
+      "effect": "breath",
+      "achievement": "love_true"
+    },
+    "ending_yq_he": {
+      "isEnding": true,
+      "title": "琴声与玫瑰",
+      "type": "TRUE ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "她弹完了肖邦的夜曲。全场掌声响起的时候——她看到你捧着一束玫瑰站在台下。她眼眶红了——但她忍住了没有哭。演出结束后——她在无人的走廊里——拉着你的手跳了一支舞。那是你人生中最不像样的一支舞——但你觉得——那也是最美好的一支。",
+      "closing": "你是我弹过最动听的和弦。",
+      "effect": "breath",
+      "achievement": "love_true"
+    },
+    "ending_bf_he": {
+      "isEnding": true,
+      "title": "摇滚与玫瑰",
+      "type": "TRUE ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在最后一场演出上——他唱了一首新歌。歌名叫《你是我写过最长的和弦》。那天台下所有人都在喊你的名字。他抱着吉他走到你面前——把拨片放进你手心——「这首歌——只为你一个人写。」",
+      "closing": "遇见你之后——所有的歌都有了意义。",
+      "effect": "breath",
+      "achievement": "love_true"
+    },
+    "ending_alone": {
+      "isEnding": true,
+      "title": "独行者的光",
+      "type": "SPECIAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你谁都没有选择。毕业后你去了很远的地方——一个人看了很多风景。在一个陌生的山顶上看日落的时候——你觉得一个人也挺好的。你拍了张照片发了个朋友圈——没有配文。很多人点赞。你收起手机——继续走了。",
+      "closing": "爱自己——是一生浪漫的开始。",
+      "effect": "breath",
+      "achievement": "love_true"
+    },
+    "ending_suicide": {
+      "isEnding": true,
+      "title": "未尽的春天",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你站在那个天台上——这里的风还是和那天一样凉。但那天她在你身边——今天只有你一个人。你往下看了一眼——城市的灯光还在闪烁——就像那个夜晚你们一起看过的那些光。",
+      "closing": "春天总会来——但不是每个人都能等到。",
+      "effect": "silence",
+      "achievement": "death_collector"
+    },
+    "ending_accident": {
+      "isEnding": true,
+      "title": "突然的终止",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "一场车祸。一切在一个普通的星期三下午戛然而止。手机屏幕上还留着没有发出去的消息——「等我回来——我们好好谈谈。」那条消息永远不会被发送了。",
+      "closing": "有些话——不要等。",
+      "effect": "silence",
+      "achievement": "death_collector"
+    },
+    "ending_sacrifice": {
+      "isEnding": true,
+      "title": "替我活下去",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "他把最后的安全位置留给了你。你活了下来。从此每一个睛天你都会想起他——因为他说过他最喜欢晴天。你开始学会替他好好地晒太阳——好好地活着——带着他的那一份。",
+      "closing": "这个世界上——有人用自己的结束——换来了你的继续。",
+      "effect": "silence",
+      "achievement": "death_collector"
+    },
+    "ending_reunion_10y": {
+      "isEnding": true,
+      "title": "十年",
+      "type": "SPECIAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "十年后的同学聚会上——你见到了他。他胖了一点——你也变了。你们在阳台上聊了一会儿——聊过去——聊现在——聊各自的家庭。回到酒桌上的时候——他给你倒了一杯酒。你们碰杯——一饮而尽。那时候你发现——有些故事——其实在十年前就结束了。",
+      "closing": "敬那些年——和你。",
+      "effect": "breath",
+      "achievement": "love_missed"
+    },
+    "ending_var_01": {
+      "isEnding": true,
+      "title": "轨迹·1",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_02": {
+      "isEnding": true,
+      "title": "回声·2",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_03": {
+      "isEnding": true,
+      "title": "湮灭·3",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_04": {
+      "isEnding": true,
+      "title": "轨迹·4",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_05": {
+      "isEnding": true,
+      "title": "回声·5",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_06": {
+      "isEnding": true,
+      "title": "湮灭·6",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_07": {
+      "isEnding": true,
+      "title": "轨迹·7",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_08": {
+      "isEnding": true,
+      "title": "回声·8",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_09": {
+      "isEnding": true,
+      "title": "湮灭·9",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_10": {
+      "isEnding": true,
+      "title": "轨迹·10",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_11": {
+      "isEnding": true,
+      "title": "回声·11",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_12": {
+      "isEnding": true,
+      "title": "湮灭·12",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_13": {
+      "isEnding": true,
+      "title": "轨迹·13",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_14": {
+      "isEnding": true,
+      "title": "回声·14",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_15": {
+      "isEnding": true,
+      "title": "湮灭·15",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_16": {
+      "isEnding": true,
+      "title": "轨迹·16",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_17": {
+      "isEnding": true,
+      "title": "回声·17",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_18": {
+      "isEnding": true,
+      "title": "湮灭·18",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_19": {
+      "isEnding": true,
+      "title": "轨迹·19",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_20": {
+      "isEnding": true,
+      "title": "回声·20",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_21": {
+      "isEnding": true,
+      "title": "湮灭·21",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_22": {
+      "isEnding": true,
+      "title": "轨迹·22",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_23": {
+      "isEnding": true,
+      "title": "回声·23",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_24": {
+      "isEnding": true,
+      "title": "湮灭·24",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_25": {
+      "isEnding": true,
+      "title": "轨迹·25",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_26": {
+      "isEnding": true,
+      "title": "回声·26",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_27": {
+      "isEnding": true,
+      "title": "湮灭·27",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_28": {
+      "isEnding": true,
+      "title": "轨迹·28",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_29": {
+      "isEnding": true,
+      "title": "回声·29",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_30": {
+      "isEnding": true,
+      "title": "湮灭·30",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_31": {
+      "isEnding": true,
+      "title": "轨迹·31",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_32": {
+      "isEnding": true,
+      "title": "回声·32",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_33": {
+      "isEnding": true,
+      "title": "湮灭·33",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_34": {
+      "isEnding": true,
+      "title": "轨迹·34",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_35": {
+      "isEnding": true,
+      "title": "回声·35",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_36": {
+      "isEnding": true,
+      "title": "湮灭·36",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_37": {
+      "isEnding": true,
+      "title": "轨迹·37",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_38": {
+      "isEnding": true,
+      "title": "回声·38",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_39": {
+      "isEnding": true,
+      "title": "湮灭·39",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_40": {
+      "isEnding": true,
+      "title": "轨迹·40",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_41": {
+      "isEnding": true,
+      "title": "回声·41",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_42": {
+      "isEnding": true,
+      "title": "湮灭·42",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_43": {
+      "isEnding": true,
+      "title": "轨迹·43",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_44": {
+      "isEnding": true,
+      "title": "回声·44",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_45": {
+      "isEnding": true,
+      "title": "湮灭·45",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_46": {
+      "isEnding": true,
+      "title": "轨迹·46",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_47": {
+      "isEnding": true,
+      "title": "回声·47",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_48": {
+      "isEnding": true,
+      "title": "湮灭·48",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_49": {
+      "isEnding": true,
+      "title": "轨迹·49",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_50": {
+      "isEnding": true,
+      "title": "回声·50",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_51": {
+      "isEnding": true,
+      "title": "湮灭·51",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_52": {
+      "isEnding": true,
+      "title": "轨迹·52",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_53": {
+      "isEnding": true,
+      "title": "回声·53",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_54": {
+      "isEnding": true,
+      "title": "湮灭·54",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_55": {
+      "isEnding": true,
+      "title": "轨迹·55",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_56": {
+      "isEnding": true,
+      "title": "回声·56",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_57": {
+      "isEnding": true,
+      "title": "湮灭·57",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_58": {
+      "isEnding": true,
+      "title": "轨迹·58",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_59": {
+      "isEnding": true,
+      "title": "回声·59",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_60": {
+      "isEnding": true,
+      "title": "湮灭·60",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_61": {
+      "isEnding": true,
+      "title": "轨迹·61",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_62": {
+      "isEnding": true,
+      "title": "回声·62",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_63": {
+      "isEnding": true,
+      "title": "湮灭·63",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_64": {
+      "isEnding": true,
+      "title": "轨迹·64",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_65": {
+      "isEnding": true,
+      "title": "回声·65",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_66": {
+      "isEnding": true,
+      "title": "湮灭·66",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_67": {
+      "isEnding": true,
+      "title": "轨迹·67",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_68": {
+      "isEnding": true,
+      "title": "回声·68",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_69": {
+      "isEnding": true,
+      "title": "湮灭·69",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_70": {
+      "isEnding": true,
+      "title": "轨迹·70",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_71": {
+      "isEnding": true,
+      "title": "回声·71",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_72": {
+      "isEnding": true,
+      "title": "湮灭·72",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_73": {
+      "isEnding": true,
+      "title": "轨迹·73",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_74": {
+      "isEnding": true,
+      "title": "回声·74",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_75": {
+      "isEnding": true,
+      "title": "湮灭·75",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_76": {
+      "isEnding": true,
+      "title": "轨迹·76",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_77": {
+      "isEnding": true,
+      "title": "回声·77",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_78": {
+      "isEnding": true,
+      "title": "湮灭·78",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_79": {
+      "isEnding": true,
+      "title": "轨迹·79",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_80": {
+      "isEnding": true,
+      "title": "回声·80",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_81": {
+      "isEnding": true,
+      "title": "湮灭·81",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_82": {
+      "isEnding": true,
+      "title": "轨迹·82",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    },
+    "ending_var_83": {
+      "isEnding": true,
+      "title": "回声·83",
+      "type": "NORMAL ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "有些故事不需要结局——因为它已经在你的心里完成了。你合上这本书的时候——窗外天气正好。远处的风吹过来——带着一点那个秋天的味道——你想起那年——然后笑了。",
+      "closing": "故事结束了——但你的生活还在继续。",
+      "effect": "breath",
+      "achievement": "normal_variant"
+    },
+    "ending_var_84": {
+      "isEnding": true,
+      "title": "湮灭·84",
+      "type": "DEATH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "在另一条时间线的支流里——你的故事以另一种方式结束了。不是因为爱不够——是因为命运有时候太重了。那个没有说出口的告别——永远留在了那年秋天。",
+      "closing": "在另一个平行时空里——我们好好在一起了。",
+      "effect": "breath",
+      "achievement": "death_variant"
+    },
+    "ending_var_85": {
+      "isEnding": true,
+      "title": "轨迹·85",
+      "type": "BRANCH ENDING",
+      "progress": 100,
+      "ambient": "wind",
+      "description": "你选择了另一条路。那条路上没有他/她——但有另一种人生。不算好也不算坏——只是不同。你偶尔会在某个相似的场景中想起那个人——然后笑了笑——继续走你的路。",
+      "closing": "每条路都有它的风景。",
+      "effect": "breath",
+      "achievement": "branch_variant"
+    }
+  }
+};
+
+let state = {
+  story: null, currentNodeId: '', segmentIndex: 0, val: 35,
+  vars: {}, flags: [], history: [], pageHistory: [],
+  choiceHistory: [], currentSceneKey: '',
+  endings: [], achievements: [], sessionStartedAt: null
+};
+
+// ===== UTILITIES =====
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function slug(t) { return t.replace(/[^a-zA-Z0-9\u4e00-\u9fff]/g, '_').toLowerCase(); }
+
+// ===== LOAD STORY =====
+function loadStory(json) {
+  if (!json || !json.meta || !json.startNodeId || !json.nodes) throw new Error('Invalid story format');
+  if (!json.nodes[json.startNodeId]) throw new Error('Start node not found');
+  state.story = json;
+  state.val = clamp(json.meta.initialVariable ?? 0, 0, 100);
+  state.vars = JSON.parse(JSON.stringify(json.variables || {}));
+  state.flags = [];
+  state.history = [];
+  state.pageHistory = [];
+  state.choiceHistory = [];
+  state.currentSceneKey = '';
+  state.endings = readEndings(json);
+  state.achievements = readAchievements(json);
+  document.getElementById('valName').textContent = json.meta.variableName || '状态值';
+  updateValDisplay();
+}
+
+function readEndings(json) {
+  const res = [];
+  for (const [id, node] of Object.entries(json.nodes)) {
+    if (node.isEnding) res.push({ id, ...node });
+  }
+  return res;
+}
+
+function readAchievements(json) {
+  const res = [];
+  for (const [id, ach] of Object.entries(json.achievements || {})) {
+    res.push({ id, ...ach, unlocked: false });
+  }
+  return res;
+}
+
+// ===== GAME START =====
+function startGame() {
+  document.getElementById('genderScreen').style.display = 'none';
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'flex';
+  state.sessionStartedAt = Date.now();
+  processNode(state.story.startNodeId);
+}
+
+function setGender(g) {
+  state.vars.playerGender = g;
+  state.vars.currentRoute = g;
+  startGame();
+}
+
+// ===== NODE PROCESSING =====
+function getNode(id) { return state.story?.nodes?.[id] || null; }
+
+function processNode(id, opts = {}) {
+  const node = getNode(id);
+  if (!node) { showToast('节点不存在: ' + id); return; }
+  
+  state.currentNodeId = id;
+  state.segmentIndex = 0;
+  
+  // Scene transition
+  const scene = normalizeScene(node);
+  if (scene && !opts.fromHistory) {
+    showSceneTransition(scene, node);
+  }
+  
+  // Chapter title
+  if (node.chapterTitle && !opts.fromHistory) {
+    showToast(node.chapterTitle, 2000);
+  }
+  
+  // Check ending
+  if (node.isEnding) {
+    showEnding(node);
+    return;
+  }
+  
+  pushHistory();
+  clearReader();
+  renderSegments(node.segments || []);
+  updateProgress(node.progress || 0);
+  document.getElementById('backBtn').style.visibility = 'visible';
+}
+
+function normalizeScene(node) {
+  const sc = node?.scene;
+  if (!sc) return null;
+  if (typeof sc === 'string') return { key: sc, name: sc, description: '' };
+  return { key: sc.id || sc.name, name: sc.name, description: sc.description || '' };
+}
+
+function showSceneTransition(scene, node) {
+  if (scene.key === state.currentSceneKey && !node.chapterTitle) return;
+  state.currentSceneKey = scene.key;
+  const el = document.getElementById('sceneOverlay');
+  document.getElementById('sceneTitle').textContent = scene.name;
+  document.getElementById('sceneDesc').textContent = scene.description || '';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ===== SEGMENT RENDERING =====
+function clearReader() {
+  document.getElementById('storyText').innerHTML = '';
+  document.getElementById('speaker').className = '';
+  document.getElementById('speaker').textContent = '';
+  document.getElementById('choices').className = '';
+  document.getElementById('choices').style.display = 'none';
+  document.getElementById('continueHint').className = '';
+  document.getElementById('sceneName').style.display = 'none';
+}
+
+function renderSegments(segs) {
+  if (!segs || segs.length === 0) {
+    renderChoices();
+    return;
+  }
+  state.segIndex = 0;
+  state.segments = segs;
+  document.getElementById('continueHint').classList.add('show');
+  showSegment(0);
+}
+
+let segIndex = 0;
+let segments = [];
+
+function showSegment(idx) {
+  const el = document.getElementById('storyText');
+  const sp = document.getElementById('speaker');
+  const segs = state.segments || segments;
+  if (idx >= segs.length) {
+    document.getElementById('continueHint').textContent = '▼ 继续';
+    renderChoices();
+    return;
+  }
+  const s = segs[idx];
+  if (s.speaker) {
+    sp.textContent = s.speaker;
+    sp.className = 'show';
+  } else {
+    sp.className = '';
+  }
+  
+  // Apply effects
+  let html = escHtml(s.text);
+  el.innerHTML = html;
+  el.style.opacity = '0';
+  setTimeout(() => { el.style.opacity = '1'; }, 50);
+  
+  segIndex = idx;
+  document.getElementById('continueHint').textContent = idx < segs.length - 1 ? '▼ 继续' : '→';
+}
+
+function advance() {
+  const segs = state.segments || segments;
+  if (segIndex < segs.length - 1) {
+    showSegment(segIndex + 1);
+  } else {
+    // Show choices
+    document.getElementById('continueHint').className = '';
+    renderChoices();
+  }
+}
+
+function escHtml(t) {
+  const div = document.createElement('div');
+  div.textContent = t;
+  return div.innerHTML;
+}
+
+// ===== CHOICES =====
+function renderChoices() {
+  const node = getNode(state.currentNodeId);
+  if (!node) return;
+  
+  const el = document.getElementById('choices');
+  el.innerHTML = '';
+  
+  // Check routes first (auto-routing)
+  if (node.routes) {
+    for (const route of node.routes) {
+      if (checkCondition(route.condition)) {
+        processNode(route.next);
+        return;
+      }
+    }
+  }
+  
+  // Single next (auto-advance)
+  if (node.next) {
+    processNode(node.next);
+    return;
+  }
+  
+  // Choices
+  const choices = node.choices || [];
+  if (choices.length === 0) {
+    if (!node.isEnding) {
+      showToast('故事已结束');
+    }
+    return;
+  }
+  
+  // Filter by condition
+  const available = choices.filter(c => !c.condition || checkCondition(c.condition));
+  
+  if (available.length === 0) {
+    showToast('没有可用的选项');
+    return;
+  }
+  
+  available.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = c.text;
+    btn.onclick = () => selectChoice(c);
+    el.appendChild(btn);
+  });
+  
+  el.style.display = 'flex';
+  el.className = 'show';
+  document.getElementById('backBtn').style.visibility = 'visible';
+}
+
+function selectChoice(choice) {
+  // Apply changes
+  if (choice.changes) {
+    applyChanges(choice.changes);
+  }
+  pushPageHistory();
+  processNode(choice.next);
+}
+
+function applyChanges(changes) {
+  if (!changes) return;
+  if (changes.val) state.val = clamp(state.val + changes.val, 0, 100);
+  if (changes.valSet !== undefined) state.val = clamp(changes.valSet, 0, 100);
+  if (changes.set) Object.assign(state.vars, changes.set);
+  if (changes.addFlag) state.flags.push(changes.addFlag);
+  if (changes.removeFlag) state.flags = state.flags.filter(f => f !== changes.removeFlag);
+  if (changes.addFlags) changes.addFlags.forEach(f => state.flags.push(f));
+  if (changes.importantFlag) {
+    const flag = typeof changes.importantFlag === 'string' ? changes.importantFlag : changes.importantFlag.flag;
+    state.flags.push(flag);
+    showImportantDecision(flag);
+  }
+  if (changes.importantFlags) {
+    changes.importantFlags.forEach(f => { state.flags.push(f); });
+  }
+  if (changes.unlockAchievement) unlockAchievement(changes.unlockAchievement);
+  updateValDisplay();
+}
+
+function checkCondition(cond) {
+  if (!cond || cond === 'default') return true;
+  // Simple condition parser
+  const m = cond.match(/(val|hasFlag|!hasFlag)\s*(>=|<=|>|<|==|!=)?\s*(.+)?/);
+  if (!m) return true;
+  const [_, type, op, val] = m;
+  if (type === 'hasFlag') return state.flags.includes(val.trim());
+  if (type === '!hasFlag') return !state.flags.includes(val.trim());
+  if (type === 'val') {
+    const n = Number(val.trim());
+    switch (op) {
+      case '>=': return state.val >= n;
+      case '<=': return state.val <= n;
+      case '>': return state.val > n;
+      case '<': return state.val < n;
+      case '==': return state.val === n;
+      case '!=': return state.val !== n;
+      default: return true;
+    }
+  }
+  return true;
+}
+
+// ===== ENDINGS =====
+function showEnding(node) {
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('endingScreen').style.display = 'flex';
+  document.getElementById('endingType').textContent = node.type || '结局';
+  document.getElementById('endingTitle').textContent = node.title;
+  document.getElementById('endingDesc').innerHTML = escHtml(node.description || '') + '';
+  document.getElementById('endingClosing').textContent = node.closing || '';
+  if (node.achievement) unlockAchievement(node.achievement);
+  recordEnding(node);
+}
+
+function showEndingAgain() {
+  document.getElementById('endingScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'flex';
+  processNode(state.currentNodeId);
+}
+
+function returnHome() {
+  document.getElementById('endingScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('startScreen').style.display = 'flex';
+  document.getElementById('genderScreen').style.display = 'none';
+  state.story = null;
+  initGame();
+}
+
+function unlockAchievement(id) {
+  const ach = state.achievements.find(a => a.id === id);
+  if (ach && !ach.unlocked) {
+    ach.unlocked = true;
+    showToast('成就解锁: ' + (ach.title || id));
+  }
+}
+
+function recordEnding(node) {
+  if (!state.endings.find(e => e.id === state.currentNodeId)) {
+    state.endings.push({ id: state.currentNodeId, ...node });
+  }
+}
+
+// ===== NAVIGATION =====
+function pushHistory() {
+  state.history.push({
+    currentNodeId: state.currentNodeId,
+    val: state.val,
+    vars: JSON.parse(JSON.stringify(state.vars)),
+    flags: [...state.flags],
+    currentSceneKey: state.currentSceneKey
+  });
+  if (state.history.length > 80) state.history.shift();
+}
+
+function pushPageHistory() {
+  state.pageHistory.push({
+    currentNodeId: state.currentNodeId,
+    val: state.val,
+    flags: [...state.flags]
+  });
+  if (state.pageHistory.length > 120) state.pageHistory.shift();
+}
+
+function goBack() {
+  if (state.history.length < 2) return;
+  state.history.pop();
+  const snap = state.history[state.history.length - 1];
+  state.val = snap.val;
+  state.vars = JSON.parse(JSON.stringify(snap.vars));
+  state.flags = [...snap.flags];
+  state.currentSceneKey = snap.currentSceneKey;
+  updateValDisplay();
+  processNode(snap.currentNodeId, { fromHistory: true });
+}
+
+function goBackChoice() {
+  if (state.pageHistory.length === 0) { showToast('没有上一步'); return; }
+  const snap = state.pageHistory.pop();
+  state.val = snap.val;
+  state.flags = [...snap.flags];
+  updateValDisplay();
+  processNode(snap.currentNodeId, { fromHistory: true });
+}
+
+// ===== UI UPDATES =====
+function updateValDisplay() {
+  document.getElementById('valDisplay').textContent = Math.round(state.val);
+}
+
+function updateProgress(p) {
+  document.getElementById('progressFill').style.width = clamp(p, 0, 100) + '%';
+}
+
+function showToast(msg, duration) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 24px;z-index:200;font-size:14px;color:var(--text);box-shadow:var(--shadow);text-align:center;line-height:1.6;max-width:300px;transition:opacity .3s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, duration || 2000);
+}
+
+function showImportantDecision(label) {
+  const flag = typeof label === 'string' ? label : (label.label || label.flag || '');
+  showToast('⚡ 重要决定已记录' + (flag ? ': ' + flag : ''));
+}
+
+function toggleMenu() {
+  const m = document.getElementById('menuPanel');
+  const o = document.getElementById('menuOverlay');
+  m.classList.toggle('open');
+  o.classList.toggle('show');
+}
+
+// ===== INIT =====
+function initGame() {
+  try {
+    const story = STORY;
+    loadStory(story);
+    document.getElementById('startBtn').onclick = function() {
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('genderScreen').style.display = 'flex';
+    };
+    console.log('Story loaded:', Object.keys(story.nodes).length, 'nodes');
+  } catch(e) {
+    console.error('Failed to load story:', e);
+    document.getElementById('startBtn').textContent = '加载失败，刷新重试';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initGame);
+</script>
+</body>
+</html>
+
