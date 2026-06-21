@@ -69,6 +69,25 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang 
 
 /* SCENE TRANSITION */
 #sceneOverlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:50;opacity:0;pointer-events:none;transition:opacity .5s}
+/* STORY CARD - inline scene transition */
+.story-card{text-align:center;padding:28px 16px;margin:16px 0;border-radius:12px;background:linear-gradient(135deg,#fefcf9,#f5efe8);border:1px solid #e6ddd4;animation:cardIn .5s ease both}
+.story-card .sc-line{width:40px;height:1px;background:linear-gradient(90deg,transparent,#c4a882,transparent);margin:8px auto}
+.story-card .sc-name{font-size:18px;letter-spacing:6px;color:#2d2a26;font-weight:300;margin:8px 0}
+.story-card .sc-desc{font-size:13px;color:#9a8e82;line-height:1.8;max-width:400px;margin:0 auto}
+
+/* CRITICAL MOMENT CARD */
+.moment-card{text-align:center;padding:32px 20px;margin:20px 0;border-radius:12px;background:linear-gradient(135deg,#f5efe8,#efe7db);border:1px solid #c4a882;position:relative;overflow:hidden}
+.moment-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#c4a882,transparent)}
+.moment-card .mc-icon{font-size:36px;display:block;margin-bottom:8px}
+.moment-card .mc-title{font-size:17px;letter-spacing:4px;color:#2d2a26;font-weight:400;margin-bottom:6px}
+.moment-card .mc-desc{font-size:13px;color:#9a8e82;line-height:1.8;max-width:380px;margin:0 auto}
+
+/* TIP CARD - 情感小知识 */
+.tip-card{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;margin:16px 0;border-radius:10px;background:#f5efe8;border:1px solid #e6ddd4;animation:cardIn .5s ease both}
+.tip-card .tip-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.tip-card .tip-label{font-size:10px;color:#b0a498;letter-spacing:2px;margin-bottom:4px;font-weight:500}
+.tip-card .tip-text{font-size:13px;color:#6b6258;line-height:1.7}
+@keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 #sceneOverlay.show{opacity:1;pointer-events:auto}
 #sceneOverlay .sn{font-size:16px;letter-spacing:6px;color:var(--accent);margin-bottom:6px;font-weight:300}
 #sceneOverlay .sd{font-size:12px;color:var(--muted);max-width:340px;text-align:center;line-height:1.8}
@@ -154,10 +173,19 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,"PingFang 
     </div>
   </div>
 
-  <!-- SCENE TRANSITION -->
-  <div id="sceneOverlay">
-    <div class="sn" id="sceneTitle"></div>
-    <div class="sd" id="sceneDesc"></div>
+  <!-- SCENE CARD (inline, appears in reader) -->
+  <div id="sceneCard" class="story-card" style="display:none">
+    <div class="sc-line"></div>
+    <div class="sc-name" id="sceneCardTitle"></div>
+    <div class="sc-desc" id="sceneCardDesc"></div>
+    <div class="sc-line"></div>
+  </div>
+  
+  <!-- TIP CARD (情感小知识, appears at key moments) -->
+  <div id="tipCard" class="tip-card" style="display:none">
+    <div class="tip-icon">💡</div>
+    <div class="tip-label">情感小知识</div>
+    <div class="tip-text" id="tipText"></div>
   </div>
 
   <!-- ENDING SCREEN -->
@@ -4060,6 +4088,14 @@ function processNode(id, opts = {}) {
     showToast(node.chapterTitle, 2000);
   }
   
+  // Show tip at node start
+  if (node.startTip) showTipCard(node.startTip);
+  
+  // Show moment card for key moments
+  if (node.momentIcon && node.momentTitle) {
+    showMomentCard(node.momentIcon, node.momentTitle, node.momentDesc || '');
+  }
+  
   // Check ending
   if (node.isEnding) {
     showEnding(node);
@@ -4083,11 +4119,14 @@ function normalizeScene(node) {
 function showSceneTransition(scene, node) {
   if (scene.key === state.currentSceneKey && !node.chapterTitle) return;
   state.currentSceneKey = scene.key;
-  const el = document.getElementById('sceneOverlay');
-  document.getElementById('sceneTitle').textContent = scene.name;
-  document.getElementById('sceneDesc').textContent = scene.description || '';
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 1800);
+  const el = document.getElementById('sceneCard');
+  document.getElementById('sceneCardTitle').textContent = scene.name;
+  document.getElementById('sceneCardDesc').textContent = scene.description || '';
+  el.style.display = 'block';
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'cardIn .5s ease both';
+  setTimeout(() => { el.style.display = 'none'; }, 2500);
 }
 
 // ===== SEGMENT RENDERING =====
@@ -4163,6 +4202,14 @@ function escHtml(t) {
 function renderChoices() {
   const node = getNode(state.currentNodeId);
   if (!node) return;
+  
+  // Show tip if available
+  if (node.tip) showTipCard(node.tip);
+  
+  // Show moment card for critical choices
+  if (node.momentIcon && node.momentTitle) {
+    showMomentCard(node.momentIcon, node.momentTitle, node.momentDesc || '');
+  }
   
   const el = document.getElementById('choices');
   el.innerHTML = '';
@@ -4370,6 +4417,25 @@ function showToast(msg, duration) {
   el._t = setTimeout(() => { el.style.opacity = '0'; }, duration || 2000);
 }
 
+
+function showMomentCard(icon, title, desc) {
+  const el = document.getElementById('storyText');
+  const card = document.createElement('div');
+  card.className = 'moment-card';
+  card.innerHTML = '<span class="mc-icon">' + icon + '</span><div class="mc-title">' + title + '</div><div class="mc-desc">' + desc + '</div>';
+  el.appendChild(card);
+  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
+function showTipCard(text) {
+  const el = document.getElementById('tipText');
+  const card = document.getElementById('tipCard');
+  el.textContent = text;
+  card.style.display = 'flex';
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'cardIn .5s ease both';
+}
 function showImportantDecision(label) {
   const flag = typeof label === 'string' ? label : (label.label || label.flag || '');
   showToast('⚡ 重要决定已记录' + (flag ? ': ' + flag : ''));
